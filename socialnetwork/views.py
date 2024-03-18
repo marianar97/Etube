@@ -7,6 +7,8 @@ import re
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.urls import reverse
+from allauth.socialaccount.models import SocialAccount
+
 
 CONFIG = ConfigParser()
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,7 +32,10 @@ def home(request):
     # print()
     # print(home_playlists)
     # print()
-    context = {'items': home_playlists}
+
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
+    print(extra_data['picture'])
+    context = {'items': home_playlists, 'picture': extra_data['picture']}
     return render(request, 'socialnetwork/home.html', context)
 
 def login_view(request):
