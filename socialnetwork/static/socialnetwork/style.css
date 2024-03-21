@@ -95,3 +95,34 @@
 .profile-picture{
     border-radius: 50%;
 }
+
+#inner {  
+    margin:20px;
+}
+
+#outter {
+    width:100%;
+    display: flex;
+    justify-content: center;
+}
+
+#login-button {
+    border: 1px solid black;
+    margin-top:15px;
+    display: flex;
+    justify-content: center;
+    padding:5px;
+}
+
+#login-button a{
+    text-decoration: None;
+    color: black;
+}
+
+#google-img{
+    vertical-align: middle;
+}
+#login-button:hover {
+    background-color: #d6edf6;
+    transition-duration: 1s;
+}
