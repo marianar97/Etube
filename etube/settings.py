@@ -30,7 +30,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
-SITE_ID= 2
+SITE_ID=2
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google'
 
 ]
-
 
 SOCIALACCOUNT_PROVIDERS = {
     "google":{
