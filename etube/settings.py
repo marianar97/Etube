@@ -30,7 +30,6 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
-SITE_ID=2
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -150,3 +149,5 @@ AUTHENTICATION_BACKENDS = (
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
+
+SITE_ID=3
