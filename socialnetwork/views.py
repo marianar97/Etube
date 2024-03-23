@@ -41,6 +41,9 @@ def home(request):
 def login_view(request):
     return render(request, 'socialnetwork/login.html')
 
+def register_view(request):
+    return render(request, 'socialnetwork/register.html')
+
 def logout_view(request):
     logout(request)
     return redirect(reverse('login'))
