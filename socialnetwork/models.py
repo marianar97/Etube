@@ -27,7 +27,8 @@ class video(models.Model):
     total_mins = models.IntegerField()
     title = models.CharField(max_length=200)
     thumbnail = models.CharField(max_length=300)
-    # channel = models.on
+    playlist = models.ManyToManyField(Playlist)
+
 
 class Channel(models.Model):
     id = models.CharField(primary_key=True, max_length=300)
