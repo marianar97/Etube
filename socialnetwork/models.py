@@ -12,17 +12,16 @@ class Profile(models.Model):
     
 class Playlist(models.Model):
     id = models.CharField(primary_key=True, max_length=300)
-    user = models.OneToOneField(User, on_delete=models.PROTECT)
+    user = models.ManyToManyField(User, null=True)
     total_mins = models.PositiveIntegerField()
     title = models.CharField(max_length=200)
     thumbnail =  models.CharField(max_length=300)
-    ChannelId = models.CharField(max_length=70)
-    user = models.OneToOneField(User, on_delete=models.PROTECT)
+    channelId = models.CharField(max_length=70)
 
     def __str__(self):
         return f"id={self.id}, title={self.title}"
 
-class video(models.Model):
+class Video(models.Model):
     id = models.CharField(primary_key=True, max_length=300)
     total_mins = models.IntegerField()
     title = models.CharField(max_length=200)
