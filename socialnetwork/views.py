@@ -27,8 +27,19 @@ topics4 = ['React', 'Django Web development', 'CSS', 'Javascript']
 @login_required                  
 def home(request):
     home_playlists = Playlist.objects.all()
+    info = []
+    for playlist in home_playlists:
+        el = {}
+        el['title'] = playlist.title if len(playlist.title) < 26 else playlist.title[:24]+'...'
+        el['playlist_thumbnail'] = playlist.thumbnail
+        el['duration'] = get_duration(playlist.total_mins)
+        c = Channel.objects.get(id=playlist.channel_id)
+        el['channel_thumbnail'] = c.thumbnail
+        el['channel_name'] = c.name
+        info.append(el)
+    
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
-    context = {'items': home_playlists, 'picture': extra_data['picture']}
+    context = {'items': info, 'picture': extra_data['picture']}
     return render(request, 'socialnetwork/home.html', context)
 
 def login_view(request):
@@ -99,6 +110,10 @@ def get_channel_info(channel_id: str):
     channel_name = items[0]['snippet']['title']
     channel_pic = items[0]['snippet']['thumbnails']['default']['url']
     return channel_name, channel_pic
+
+def get_duration(minutes: str) -> str:
+    hours, minutes = divmod(minutes, 60)
+    return f"{int(hours)} hours {int(minutes)} minutes" if hours > 0 else f"{minutes} minutes"
 
 def fill_database(*args):
     for keywords in args:
