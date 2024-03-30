@@ -10,13 +10,18 @@ class Profile(models.Model):
     def __str__(self):
         return f'id={self.id}, bio="{self.bio}" user={self.user.id}'
     
+class Channel(models.Model):
+    id = models.CharField(primary_key=True, max_length=300)
+    name = models.CharField(max_length=70)
+    thumbnail =  models.CharField(max_length=300)
+
 class Playlist(models.Model):
     id = models.CharField(primary_key=True, max_length=300)
     user = models.ManyToManyField(User, null=True)
     total_mins = models.PositiveIntegerField()
     title = models.CharField(max_length=200)
     thumbnail =  models.CharField(max_length=300)
-    channelId = models.CharField(max_length=70)
+    channel = models.ForeignKey(Channel, max_length=70, on_delete=models.PROTECT)
 
     def __str__(self):
         return f"id={self.id}, title={self.title}"
@@ -27,12 +32,6 @@ class Video(models.Model):
     title = models.CharField(max_length=200)
     thumbnail = models.CharField(max_length=300)
     playlist = models.ManyToManyField(Playlist)
-
-
-class Channel(models.Model):
-    id = models.CharField(primary_key=True, max_length=300)
-    name = models.CharField(max_length=70)
-    thumbnail = models.CharField(max_length=300)
 
 
 
