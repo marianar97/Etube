@@ -13,7 +13,7 @@
             {% for item in items %}
                 <div class="vid-list">
                     <div class="img__wrap">
-                        <a href="">
+                        <a href="{% url 'course' item.id %}">
                             <img src={{item.playlist_thumbnail}} alt="" class="thumbnail img__img">
                             <p class="img__description">{{item.duration}}</p>
                         </a>

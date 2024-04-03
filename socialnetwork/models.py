@@ -33,5 +33,7 @@ class Video(models.Model):
     thumbnail = models.CharField(max_length=300)
     playlist = models.ManyToManyField(Playlist)
 
+    def __str__(self):
+        return f"id={self.id}, title={self.title}"
 
 

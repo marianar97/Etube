@@ -1,0 +1,25 @@
+{% extends "socialnetwork/base.html" %}
+
+{% load static %}
+
+{% block body %}
+
+    <div class="grid-container">
+        <div class="main-player">
+            <iframe  class="player" src="//www.youtube.com/embed/OvKCESUCWII" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
+            </iframe>
+        </div>
+        <div class="playlist-parent">
+            <div class="lesson-title">{{playlist.title}}</div>
+            {% for video in videos%}
+                <div class="lesson-item">
+                    <a href="" class="lesson-link">
+                        <img src="{% static 'socialnetwork/images/play.png' %}" height="20">
+                            {{video.title}}
+                    </a>
+                </div>
+            {%endfor%}
+        </div>
+    </div>
+
+{% endblock%}
