@@ -11,6 +11,7 @@
 
 .lesson-item{
     padding: 15px;
+    border: solid 1px #dddddd;
 }
 
 .lesson-link{
@@ -30,6 +31,7 @@
 
 .lesson-title{
     font-family: "Montserrat",sans-serif;
+    font-weight: bold;
     font-size:16px;
     padding: 20px;
     text-align: center;

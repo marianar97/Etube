@@ -6,14 +6,14 @@
 
     <div class="grid-container">
         <div class="main-player">
-            <iframe  class="player" src="//www.youtube.com/embed/OvKCESUCWII" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
+            <iframe  class="player" src={{fvideo.url}} frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
             </iframe>
         </div>
         <div class="playlist-parent">
             <div class="lesson-title">{{playlist.title}}</div>
             {% for video in videos%}
                 <div class="lesson-item">
-                    <a href="" class="lesson-link">
+                    <a href="{% url 'course' playlist.id %}?v={{video.id}}" class="lesson-link">
                         <img src="{% static 'socialnetwork/images/play.png' %}" height="20">
                             {{video.title}}
                     </a>

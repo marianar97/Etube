@@ -17,7 +17,7 @@ class Channel(models.Model):
 
 class Playlist(models.Model):
     id = models.CharField(primary_key=True, max_length=300)
-    user = models.ManyToManyField(User, null=True)
+    user = models.ManyToManyField(User)
     total_mins = models.PositiveIntegerField()
     title = models.CharField(max_length=200)
     thumbnail =  models.CharField(max_length=300)
@@ -31,6 +31,7 @@ class Video(models.Model):
     total_mins = models.IntegerField()
     title = models.CharField(max_length=200)
     thumbnail = models.CharField(max_length=300)
+    url = models.CharField(max_length=300)
     playlist = models.ManyToManyField(Playlist)
 
     def __str__(self):

@@ -57,13 +57,12 @@ def logout_view(request):
 
 @login_required
 def course_view(request, playlist_id):
-    print("in course_view", playlist_id)
+    video_id = request.GET.get("v")
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
     playlist = Playlist.objects.get(id=playlist_id)
     videos_in_playlist = Video.objects.filter(playlist__id=playlist_id)
-    print(f"playlists found for {playlist_id}: {playlist}")
-    print(f"videos found: {len(videos_in_playlist)}")
-    context = {'playlist': playlist, 'picture': extra_data['picture'], 'videos': videos_in_playlist}
+    first_video = Video.objects.get(id=video_id) if video_id else videos_in_playlist[0]
+    context = {'playlist': playlist, 'picture': extra_data['picture'], 'videos': videos_in_playlist, 'fvideo':first_video}
     return render(request, 'socialnetwork/course.html', context=context)
 
 def get_query(keywords: list) -> str:
@@ -89,12 +88,12 @@ def get_playlists_items(topics: list) -> list:
         maxResults=6,
         order="viewCount",
         q=query,
-        type="playlist"
+        type="playlist",
+        relevanceLanguage="en"
     )
     return request.execute()['items']
 
 def get_playlist_videos_channels(items: list):
-    print("get playlist videos and channels")
     playlists = []
     channels = []
     videos = []
@@ -116,7 +115,6 @@ def get_playlist_videos_channels(items: list):
         channels.append(channel)
         playlists.append(playlist)
         videos.append(pl_videos)
-        print("videos", len(pl_videos))
     
     return playlists, videos, channels
 
@@ -135,17 +133,13 @@ def get_duration(minutes: str) -> str:
     return f"{int(hours)} hours {int(minutes)} minutes" if hours > 0 else f"{minutes} minutes"
 
 def fill_database(*args):
-    print("in fill database")
     for keywords in args:
-        print(f"keyword: {keywords}")
         ans = get_playlists_items(keywords)
-        print("ans: ", ans)
         playlists, all_videos, channels = get_playlist_videos_channels(ans)
         for channel in channels:
             id_ = channel['id']
             name = channel['name']
             thumbnail = channel['thumbnail']
-
             try:
                 c = Channel(
                         id = id_,
@@ -154,7 +148,7 @@ def fill_database(*args):
                 )
                 c.save()
             except Exception as e:
-                print("Error: ", e)
+                print(f"Error creating channel {c} ")
                 raise Exception(e)
 
         for playlist in playlists:
@@ -176,7 +170,7 @@ def fill_database(*args):
                     )
                 p.save()
             except Exception as e:
-                print("ERROR: ", playlist)
+                print(f"ERROR creating playlist: {playlist}")
                 raise Exception(e)
         
         for videos in all_videos:
@@ -187,6 +181,7 @@ def fill_database(*args):
                 title = details['title']
                 thumbnail = details['thumbnail']['default']
                 playlist_id = details['playlist_id']
+                url = details['url']
                 playlists = Playlist.objects.filter(id=playlist_id)
                 
                 try:
@@ -194,14 +189,14 @@ def fill_database(*args):
                         id=id,
                         total_mins=total_mins,
                         title=title,
-                        thumbnail=thumbnail)
+                        thumbnail=thumbnail,
+                        url=url)
                     vd.save()
                     for p in playlists:
                         vd.playlist.add(p)
                     vd.save()
-                    # print(f"added playlist {id} and video: {vd.id} to video_playlist table")
                 except Exception as e:
-                    print("ERROR: ", playlist)
+                    print(f"ERROR creating video : {vd}")
                     raise Exception(e)
 
 
@@ -242,9 +237,6 @@ def get_playlists_videos_and_duration(playlist_id: str) -> int:
             pageToken=next_page_token
         )
         pl_response = pl_request.execute()
-        # print("PL RESPONSE")
-        # print("\n"*5)
-        # print(pl_response)
         
 
         ids = []
@@ -273,8 +265,11 @@ def get_playlists_videos_and_duration(playlist_id: str) -> int:
             id = video['id']
             duration = get_video_mins_duration(video['contentDetails']['duration'])
             videos[id]['duration'] = duration
-            videos[id]['embedHtml'] = video['player']['embedHtml']
-            total_mins += duration        
+            iframe_string = video['player']['embedHtml']
+            match = re.search(r'//([a-zA-Z0-9./_-]+)"', iframe_string)
+            src = match.group(1)
+            total_mins += duration    
+            videos[id]['url'] = '//'+src    
 
         next_page_token = pl_response.get('nextPageToken')
         if not next_page_token:
