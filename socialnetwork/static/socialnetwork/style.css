@@ -28,7 +28,6 @@
     color: #262626;
 }
 
-
 .lesson-title{
     font-family: "Montserrat",sans-serif;
     font-weight: bold;
@@ -36,6 +35,8 @@
     padding: 20px;
     text-align: center;
     background-color: #d5d4d4;
+    position:sticky;
+    top: 0;
 }
 
 .grid-container {
@@ -171,4 +172,16 @@
 .playlist-parent{
     height: 90vh;
     overflow: scroll;
+}
+
+.active-item {
+    background-color: #3f82dd;
+    border: solid 1px #3f82dd;
+    color: white;
+}
+
+.active-item:hover {
+    background-color: #3f82dd;
+    border: solid 1px #3f82dd;
+    color: white;
 }

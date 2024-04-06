@@ -12,10 +12,14 @@
         <div class="playlist-parent">
             <div class="lesson-title">{{playlist.title}}</div>
             {% for video in videos%}
-                <div class="lesson-item">
-                    <a href="{% url 'course' playlist.id %}?v={{video.id}}" class="lesson-link">
-                        <img src="{% static 'socialnetwork/images/play.png' %}" height="20">
-                            {{video.title}}
+                <div class="lesson-item {%if video.id == fvideo.id %} active-item {%endif%}">
+                    <a href="{% url 'course' playlist.id %}?v={{video.id}}" class="lesson-link {%if video.id == fvideo.id %} active-item {%endif%}">
+                        {%if video.id == fvideo.id %}
+                            <img src="{% static '/socialnetwork/images/playing.png' %}" height="20">
+                        {% else %}
+                            <img src="{% static 'socialnetwork/images/play.png' %}" height="20">
+                        {% endif %}
+                        {{video.title}}
                     </a>
                 </div>
             {%endfor%}
