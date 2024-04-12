@@ -8,7 +8,7 @@ class Profile(models.Model):
     following = models.ManyToManyField(User, related_name="followers")
 
     def __str__(self):
-        return f'id={self.id}, bio="{self.bio}" user={self.user.id}'
+        return f'id={self.id}, user={self.user.id}'
     
 class Channel(models.Model):
     id = models.CharField(primary_key=True, max_length=300)

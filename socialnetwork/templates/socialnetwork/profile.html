@@ -1,0 +1,29 @@
+{% extends "socialnetwork/base.html" %}
+
+{% load static %}
+
+{% block body %}
+<link rel="stylesheet" type="text/css" href="{% static 'socialnetwork/profile.css' %}">
+<div class="profile-container">
+    <div class="personal-info-container">
+        <div class="personal-info">
+            <img class="profile-img" src={{picture}} height="50">
+            <p class="username">@{{user.username}}</p>
+        </div>
+    </div>
+    <div class="following-info">
+        <h2>Following:</h2>
+        <ul class="follower-list">
+            {% for follower in profile.following.all %}
+                <li>
+                    <a href="{% url 'click_on_name' %}?name={{ follower.username }}" class="follower-link" id="id_profile_link_{{follower.username}}">
+                        <span class="follower-username">{{follower.user.username}}</span>
+                    </a>
+                </li>
+            {% empty %}
+                <li>No followers yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

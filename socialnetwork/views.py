@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.urls import reverse
 from allauth.socialaccount.models import SocialAccount
-from .models import Playlist, Video, Channel
+from .models import Playlist, Profile, Video, Channel
 
 
 CONFIG = ConfigParser()
@@ -43,6 +43,13 @@ def home(request):
     context = {'items': info, 'picture': extra_data['picture']}
     # fill_database(topics1)
     # fill_database(topics1, topics2, topics3, topics4, topics5)
+    
+    if Profile.objects.filter(user=request.user).count() == 0:
+        new_user_profile = Profile.objects.create(user = request.user)
+        username = request.user.username
+        print(f"creating new profile with username={username}")
+        new_user_profile.save()
+
     return render(request, 'socialnetwork/home.html', context)
 
 def login_view(request):
@@ -54,6 +61,16 @@ def register_view(request):
 def logout_view(request):
     logout(request)
     return redirect(reverse('login'))
+
+@login_required
+def profile_view(request, username):
+    context = {'picture': extra_data['picture']}
+    if username == request.user.username:
+        extra_data = SocialAccount.objects.get(user=request.user).extra_data
+        context['profile'] = Profile.objects.get(user = request.user)
+        return render(request, 'socialnetwork/profile.html', context)
+    else:
+        return render(request, 'socialnetwork/other_profile.html', context)
 
 @login_required
 def course_view(request, playlist_id):
