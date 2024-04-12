@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from googleapiclient.discovery import build
 from pathlib import Path
 from configparser import ConfigParser
@@ -9,6 +9,7 @@ from django.contrib.auth import logout
 from django.urls import reverse
 from allauth.socialaccount.models import SocialAccount
 from .models import Playlist, Profile, Video, Channel
+from django.contrib.auth.models import User
 
 
 CONFIG = ConfigParser()
@@ -45,10 +46,11 @@ def home(request):
     # fill_database(topics1, topics2, topics3, topics4, topics5)
     
     if Profile.objects.filter(user=request.user).count() == 0:
-        new_user_profile = Profile.objects.create(user = request.user)
+        new_user_profile = Profile.objects.create(user = request.user, picture = extra_data['picture'])
         username = request.user.username
         print(f"creating new profile with username={username}")
         new_user_profile.save()
+    
 
     return render(request, 'socialnetwork/home.html', context)
 
@@ -64,12 +66,23 @@ def logout_view(request):
 
 @login_required
 def profile_view(request, username):
+    # print(f"data: {SocialAccount.objects.get(user=request.user).extra_data}")
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
     context = {'picture': extra_data['picture']}
     if username == request.user.username:
-        extra_data = SocialAccount.objects.get(user=request.user).extra_data
-        context['profile'] = Profile.objects.get(user = request.user)
+        context['user_info'] = extra_data
+        profile = get_object_or_404(Profile, user=request.user)
+        number_of_following = profile.following.count()
+        context['number_following'] = number_of_following
+        context['profile'] = profile
         return render(request, 'socialnetwork/profile.html', context)
     else:
+        user = User.objects.get(username=username)
+        profile = get_object_or_404(Profile, user=user)
+        number_of_following = profile.following.count()
+        context['number_following'] = number_of_following
+        context['profile_picture'] = profile.picture
+        context['profile'] = profile
         return render(request, 'socialnetwork/other_profile.html', context)
 
 @login_required

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT)
-    picture = models.FileField(blank=True)
+    picture = models.CharField(max_length=500)
     content_type = models.CharField(blank=True, max_length=50)
     following = models.ManyToManyField(User, related_name="followers")
 
