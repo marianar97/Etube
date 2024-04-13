@@ -41,8 +41,8 @@ def get_youtube_playlists(user_token):
     return response
 
 def get_youtube(token, refresh_token):
-    client_id = CONFIG.get("ClientSecret", "client-id")
-    client_secret = CONFIG.get("ClientSecret", "client-secret")
+    client_id = CONFIG.get("ClientSecret", "client_id")
+    client_secret = CONFIG.get("ClientSecret", "client_secret")
     token_uri = "https://oauth2.googleapis.com/token"
     credentials = Credentials(
         token=token,
