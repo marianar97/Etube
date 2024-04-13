@@ -10,6 +10,8 @@ from django.urls import reverse
 from allauth.socialaccount.models import SocialAccount
 from .models import Playlist, Profile, Video, Channel
 from django.contrib.auth.models import User
+from allauth.socialaccount.models import SocialToken, SocialAccount
+from google.oauth2.credentials import Credentials
 
 
 CONFIG = ConfigParser()
@@ -25,7 +27,49 @@ topics2 = ['compilers', 'java', 'javascript', 'numpy', 'sklearn']
 topics3 = ['Machine Learning', 'Large Lenguage Models', 'Data Structures'] 
 topics4 = ['React', 'Django Web development', 'CSS', 'Javascript']
 topics5 = ['web development', 'python']
-                                                                             
+
+
+
+def get_youtube_playlists(user_token):
+    youtube = build('youtube', 'v3', developerKey=user_token)
+    request = youtube.playlists().list(
+        part="snippet,contentDetails",
+        maxResults=25,
+        mine=True
+    )
+    response = request.execute()
+    return response
+
+def get_youtube(token, refresh_token):
+    client_id = CONFIG.get("ClientSecret", "client-id")
+    client_secret = CONFIG.get("ClientSecret", "client-secret")
+    token_uri = "https://oauth2.googleapis.com/token"
+    credentials = Credentials(
+        token=token,
+        # refresh_token=refresh_token,
+        token_uri=token_uri,  # This is the token endpoint from Google's OAuth server
+        client_id=client_id,
+        client_secret=client_secret,
+        scopes=['https://www.googleapis.com/auth/youtube.readonly']
+    )
+    youtube = build('youtube', 'v3', credentials=credentials)
+    return youtube
+
+def get_user_playlists(youtube):
+    """Fetches the user's YouTube playlists."""
+    try:
+        # This will get the first page of playlists
+        request = youtube.playlists().list(
+            part="snippet,contentDetails",  # part specifies the properties to be included in response objects
+            maxResults=25,  # Adjust the number of results per page
+            mine=True  # Set this to True to retrieve playlists of the authenticated user
+        )
+        response = request.execute()  # Executes the request
+        print(f"response: {response}")
+    except Exception as e:
+        print("An error occurred: %s" % e)
+        return None
+
 @login_required                  
 def home(request):
     home_playlists = Playlist.objects.all()
@@ -44,6 +88,15 @@ def home(request):
     context = {'items': info, 'picture': extra_data['picture']}
     # fill_database(topics1)
     # fill_database(topics1, topics2, topics3, topics4, topics5)
+
+    social_account = SocialAccount.objects.get(user=request.user, provider='google')
+    # Retrieve the token associated with this social account
+    print(f"social account: {social_account}")
+    token = SocialToken.objects.get(account=social_account)
+    access_token = token.token
+    refresh_token = token.token_secret 
+    youtube = get_youtube(access_token, '')
+    get_user_playlists(youtube)
     
     if Profile.objects.filter(user=request.user).count() == 0:
         new_user_profile = Profile.objects.create(user = request.user, picture = extra_data['picture'])
@@ -51,9 +104,13 @@ def home(request):
         print(f"creating new profile with username={username}")
         new_user_profile.save()
     
-    print(f"User profile: {request.user.profile}")
-
     return render(request, 'socialnetwork/home.html', context)
+
+@login_required
+def playlists(request):
+    pass
+
+
 
 def login_view(request):
     return render(request, 'socialnetwork/login.html')
