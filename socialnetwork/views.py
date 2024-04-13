@@ -51,6 +51,7 @@ def home(request):
         print(f"creating new profile with username={username}")
         new_user_profile.save()
     
+    print(f"User profile: {request.user.profile}")
 
     return render(request, 'socialnetwork/home.html', context)
 
@@ -69,20 +70,19 @@ def profile_view(request, username):
     # print(f"data: {SocialAccount.objects.get(user=request.user).extra_data}")
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
     context = {'picture': extra_data['picture']}
+    profile = get_object_or_404(Profile, user=request.user)
     if username == request.user.username:
         context['user_info'] = extra_data
-        profile = get_object_or_404(Profile, user=request.user)
         number_of_following = profile.following.count()
         context['number_following'] = number_of_following
         context['profile'] = profile
         return render(request, 'socialnetwork/profile.html', context)
     else:
         user = User.objects.get(username=username)
+        user_info = SocialAccount.objects.get(user=user).extra_data
+        print(f"extra data: {extra_data}")
         profile = get_object_or_404(Profile, user=user)
-        number_of_following = profile.following.count()
-        context['number_following'] = number_of_following
-        context['profile_picture'] = profile.picture
-        context['profile'] = profile
+        context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info}
         return render(request, 'socialnetwork/other_profile.html', context)
 
 @login_required
@@ -94,6 +94,37 @@ def course_view(request, playlist_id):
     first_video = Video.objects.get(id=video_id) if video_id else videos_in_playlist[0]
     context = {'playlist': playlist, 'picture': extra_data['picture'], 'videos': videos_in_playlist, 'fvideo':first_video}
     return render(request, 'socialnetwork/course.html', context=context)
+
+@login_required
+def unfollow(request, username):
+    user = User.objects.get(username=username)
+
+    # add user
+    request.user.profile.following.remove(user)
+    request.user.profile.save()
+
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
+    user = User.objects.get(username=username)
+    user_info = SocialAccount.objects.get(user=user).extra_data
+    profile = get_object_or_404(Profile, user=user)
+    context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info}
+    return render(request, 'socialnetwork/other_profile.html', context)
+
+@login_required
+def follow(request, username):
+    user = User.objects.get(username=username)
+
+    # add user
+    request.user.profile.following.add(user)
+    request.user.profile.save()
+
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
+    user = User.objects.get(username=username)
+    user_info = SocialAccount.objects.get(user=user).extra_data
+    profile = get_object_or_404(Profile, user=user)
+    context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info}
+    return render(request, 'socialnetwork/other_profile.html', context)
+
 
 def get_query(keywords: list) -> str:
     """
