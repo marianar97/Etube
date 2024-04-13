@@ -90,9 +90,13 @@ def user_playlists(request):
 def _update_playlists(request, user_playlists_items):
     playlists_to_update = []
     for playlist in user_playlists_items:
-        playlist = request.user.playlist_set.get(id=playlist['id'])
-        if not playlist:
-            playlists_to_update.append(playlist)
+        try:
+            print(f"request user: {request.user.playlist_set.all()}")
+            playlist = request.user.playlist_set.get(id=playlist['id'])
+            if not playlist:
+                playlists_to_update.append(playlist)
+        except Exception as e:
+            pass
     
     if playlists_to_update:
         playlists, videos, channels = _get_users_videos(playlists_to_update, youtube)
@@ -194,6 +198,8 @@ def home(request):
     home_playlists = Playlist.objects.all()
     info = []
     for playlist in home_playlists:
+        if request.user.playlist_set.filter(id=playlist.id).exists():
+            continue
         el = {}
         el['id'] = playlist.id
         el['title'] = playlist.title if len(playlist.title) < 26 else playlist.title[:24]+'...'
