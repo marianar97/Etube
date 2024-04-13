@@ -185,3 +185,7 @@
     border: solid 1px #3f82dd;
     color: white;
 }
+
+.profile-card-link{
+    text-decoration: none;
+}

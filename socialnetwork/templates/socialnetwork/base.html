@@ -37,7 +37,7 @@
                     <img class="profile-picture" src={{picture}} alt="" width="45" height="45">
                   </a>
                 <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown"> <!-- This line has been updated -->
-                  <a class="dropdown-item" href="#">Profile</a>
+                  <a class="dropdown-item" href="{% url 'profile' request.user.username %}">Profile</a>
                   <a class="dropdown-item" href="logout">Logout</a>
                 </div>
               </li>
