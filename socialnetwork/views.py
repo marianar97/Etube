@@ -29,18 +29,7 @@ topics4 = ['React', 'Django Web development', 'CSS', 'Javascript']
 topics5 = ['web development', 'python']
 
 
-
-def get_youtube_playlists(user_token):
-    youtube = build('youtube', 'v3', developerKey=user_token)
-    request = youtube.playlists().list(
-        part="snippet,contentDetails",
-        maxResults=25,
-        mine=True
-    )
-    response = request.execute()
-    return response
-
-def get_youtube(token, refresh_token):
+def get_youtube(token):
     client_id = CONFIG.get("ClientSecret", "client_id")
     client_secret = CONFIG.get("ClientSecret", "client_secret")
     token_uri = "https://oauth2.googleapis.com/token"
@@ -61,14 +50,144 @@ def get_user_playlists(youtube):
         # This will get the first page of playlists
         request = youtube.playlists().list(
             part="snippet,contentDetails",  # part specifies the properties to be included in response objects
-            maxResults=25,  # Adjust the number of results per page
+            maxResults=50,  # Adjust the number of results per page
             mine=True  # Set this to True to retrieve playlists of the authenticated user
         )
-        response = request.execute()  # Executes the request
-        print(f"response: {response}")
+        return request.execute()['items']  # Executes the request
     except Exception as e:
-        print("An error occurred: %s" % e)
+        # print("An error occurred: %s" % e)
         return None
+
+@login_required
+def user_playlists(request):
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
+    social_account = SocialAccount.objects.get(user=request.user, provider='google')
+    token = SocialToken.objects.get(account=social_account)
+    access_token = token.token
+    youtube = get_youtube(access_token)
+    user_playlists_items = get_user_playlists(youtube)
+    if not user_playlists_items: #user doesn't have any playlists
+        print("no playlists")
+        return render(request, 'socialnetwork/playlists.html', {'picture': extra_data['picture']})
+    else:
+        _update_playlists(request, user_playlists_items)
+        home_playlists = request.user.playlist_set.all()
+        info = []
+        for playlist in home_playlists:
+            el = {}
+            el['id'] = playlist.id
+            el['title'] = playlist.title if len(playlist.title) < 26 else playlist.title[:24]+'...'
+            el['playlist_thumbnail'] = playlist.thumbnail
+            el['duration'] = get_duration(playlist.total_mins)
+            c = Channel.objects.get(id=playlist.channel_id)
+            el['channel_thumbnail'] = c.thumbnail
+            el['channel_name'] = c.name
+            info.append(el)
+        context = {'items': info, 'picture': extra_data['picture']}
+        return render(request, 'socialnetwork/playlists.html', context)
+
+
+def _update_playlists(request, user_playlists_items):
+    playlists_to_update = []
+    for playlist in user_playlists_items:
+        playlist = request.user.playlist_set.get(id=playlist['id'])
+        if not playlist:
+            playlists_to_update.append(playlist)
+    
+    if playlists_to_update:
+        playlists, videos, channels = _get_users_videos(playlists_to_update, youtube)
+        save_channels(channels)
+        save_playlists(playlists, user=request.user)
+        save_videos(videos)
+
+def _get_users_videos(playlists_items, youtube):
+
+    # print(f"playlist_items: {playlists_items}")
+    # print("\n"*3)
+
+    # return 
+    playlists = []
+    videos = []
+    channels = []
+    
+    for item in playlists_items:
+        try: 
+            playlist = {}
+            channel = {}
+            playlist['playlist_id'] = item['id']
+            playlist['title'] = item['snippet']['title']
+            playlist['thumbnail'] = item['snippet']['thumbnails']['medium']['url']
+            playlist['channel_id'] = item['snippet']['channelId']
+            # print(f"item id: {item['id']}, title: {playlist['title']}")
+            channel_name, channel_thumbnail = get_channel_info(playlist['channel_id'])
+            duration, pl_videos = _get_videos_of_user_playlists_and_duration(playlist['playlist_id'], youtube)
+            duration, pl_videos
+            playlist['duration'] = duration
+            channel['id'] = playlist['channel_id']
+            channel['name'] = channel_name
+            channel['thumbnail'] = channel_thumbnail
+            channels.append(channel)
+            playlists.append(playlist)
+            videos.append(pl_videos)
+        except Exception as e:
+            print(f"Exception in _get_users_videos: {e}")
+            continue
+    
+    return playlists, videos, channels
+
+def _get_videos_of_user_playlists_and_duration(playlist_id, youtube):
+    next_page_token = None
+    videos = {}
+    total_mins  = 0
+
+    while True:
+        pl_request = youtube.playlistItems().list(
+            part="snippet",
+            playlistId=playlist_id,
+            maxResults=50  # You can fetch up to 50 items per request
+        )
+
+        pl_response = pl_request.execute()
+        # print(f"pl_response: {len(pl_response)}")
+
+        ids = []
+        for item in pl_response['items']:
+            # print(f"item: {item}")
+            video = {}
+            video['title'] = item['snippet']['title']
+            # video['description'] = item['snippet']['description']
+            video['thumbnail'] = item['snippet']['thumbnails']
+
+            video['playlist_id'] = playlist_id
+            id_video = item['snippet']['resourceId']['videoId']
+            videos[id_video] = video 
+            ids.append(id_video)
+                
+        vid_request = youtube.videos().list(
+                part="contentDetails, player",
+                id=",".join(ids)
+        )
+
+        vid_response = vid_request.execute()
+        for video in vid_response['items']:
+            if video['id'] not in videos:
+                continue
+            
+            id = video['id']
+            duration = get_video_mins_duration(video['contentDetails']['duration'])
+            videos[id]['duration'] = duration
+            iframe_string = video['player']['embedHtml']
+            match = re.search(r'//([a-zA-Z0-9./_-]+)"', iframe_string)
+            src = match.group(1)
+            total_mins += duration    
+            videos[id]['url'] = '//'+src    
+
+        next_page_token = pl_response.get('nextPageToken')
+        if not next_page_token:
+            break
+
+    return total_mins, videos
+
 
 @login_required                  
 def home(request):
@@ -88,29 +207,14 @@ def home(request):
     context = {'items': info, 'picture': extra_data['picture']}
     # fill_database(topics1)
     # fill_database(topics1, topics2, topics3, topics4, topics5)
-
-    social_account = SocialAccount.objects.get(user=request.user, provider='google')
-    # Retrieve the token associated with this social account
-    print(f"social account: {social_account}")
-    token = SocialToken.objects.get(account=social_account)
-    access_token = token.token
-    refresh_token = token.token_secret 
-    youtube = get_youtube(access_token, '')
-    get_user_playlists(youtube)
     
     if Profile.objects.filter(user=request.user).count() == 0:
         new_user_profile = Profile.objects.create(user = request.user, picture = extra_data['picture'])
         username = request.user.username
-        print(f"creating new profile with username={username}")
+        # print(f"creating new profile with username={username}")
         new_user_profile.save()
     
     return render(request, 'socialnetwork/home.html', context)
-
-@login_required
-def playlists(request):
-    pass
-
-
 
 def login_view(request):
     return render(request, 'socialnetwork/login.html')
@@ -137,7 +241,6 @@ def profile_view(request, username):
     else:
         user = User.objects.get(username=username)
         user_info = SocialAccount.objects.get(user=user).extra_data
-        print(f"extra data: {extra_data}")
         profile = get_object_or_404(Profile, user=user)
         context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info}
         return render(request, 'socialnetwork/other_profile.html', context)
@@ -254,68 +357,77 @@ def fill_database(*args):
     for keywords in args:
         ans = get_playlists_items(keywords)
         playlists, all_videos, channels = get_playlist_videos_channels(ans)
-        for channel in channels:
-            id_ = channel['id']
-            name = channel['name']
-            thumbnail = channel['thumbnail']
-            try:
-                c = Channel(
-                        id = id_,
-                        name = name,
-                        thumbnail = thumbnail,
+        save_channels(channels)
+        save_playlists(playlists)
+        save_videos(all_videos)
+
+def save_channels(channels: list):
+    for channel in channels:
+        id_ = channel['id']
+        name = channel['name']
+        thumbnail = channel['thumbnail']
+        try:
+            c = Channel(
+                    id = id_,
+                    name = name,
+                    thumbnail = thumbnail,
+            )
+            c.save()
+        except Exception as e:
+            # print(f"Error creating channel {c} ")
+            raise Exception(e)
+            
+def save_playlists(playlists: list, user: User):
+    for playlist in playlists:
+        id = playlist['playlist_id']
+        total_mins = playlist['duration']
+        title = playlist['title']
+        thumbnail = playlist['thumbnail']
+        channelId = playlist['channel_id']
+
+        channel = Channel.objects.get(id=channelId)
+
+        try:
+            p = Playlist( 
+                    id=id,
+                    total_mins=total_mins,
+                    title=title,
+                    thumbnail=thumbnail,
+                    channel = channel
                 )
-                c.save()
-            except Exception as e:
-                print(f"Error creating channel {c} ")
-                raise Exception(e)
+            p.save()
+            if user:
+                p.user.add(user)
+        except Exception as e:
+            # print(f"ERROR creating playlist: {playlist}")
+            raise Exception(e)
 
-        for playlist in playlists:
-            id = playlist['playlist_id']
-            total_mins = playlist['duration']
-            title = playlist['title']
-            thumbnail = playlist['thumbnail']
-            channelId = playlist['channel_id']
-
-            channel = Channel.objects.get(id=channelId)
-
+def save_videos(all_videos: list):
+    for videos in all_videos:
+        for id, details in videos.items():
+            if details.get('title') == 'Private video' or not 'duration' in details.keys():
+                continue
+            total_mins = details['duration']
+            title = details['title']
+            thumbnail = details['thumbnail']['default']
+            playlist_id = details['playlist_id']
+            url = details['url']
+            playlists = Playlist.objects.filter(id=playlist_id)
+            
             try:
-                p = Playlist( 
-                        id=id,
-                        total_mins=total_mins,
-                        title=title,
-                        thumbnail=thumbnail,
-                        channel = channel
-                    )
-                p.save()
+                vd = Video(
+                    id=id,
+                    total_mins=total_mins,
+                    title=title,
+                    thumbnail=thumbnail,
+                    url=url)
+                vd.save()
+                for p in playlists:
+                    vd.playlist.add(p)
+                vd.save()
             except Exception as e:
-                print(f"ERROR creating playlist: {playlist}")
+                # print(f"ERROR creating video : {vd}")
                 raise Exception(e)
-        
-        for videos in all_videos:
-            for id, details in videos.items():
-                if details.get('title') == 'Private video' or not 'duration' in details.keys():
-                    continue
-                total_mins = details['duration']
-                title = details['title']
-                thumbnail = details['thumbnail']['default']
-                playlist_id = details['playlist_id']
-                url = details['url']
-                playlists = Playlist.objects.filter(id=playlist_id)
-                
-                try:
-                    vd = Video(
-                        id=id,
-                        total_mins=total_mins,
-                        title=title,
-                        thumbnail=thumbnail,
-                        url=url)
-                    vd.save()
-                    for p in playlists:
-                        vd.playlist.add(p)
-                    vd.save()
-                except Exception as e:
-                    print(f"ERROR creating video : {vd}")
-                    raise Exception(e)
 
 
 
@@ -343,7 +455,8 @@ def get_video_mins_duration(duration: str) -> int:
     return minutes
 
 
-def get_playlists_videos_and_duration(playlist_id: str) -> int:
+def get_playlists_videos_and_duration(playlist_id: str):
+    # print(f"searching for playlist with id {playlist_id}")
     next_page_token = None
     videos = {}
     total_mins = 0
