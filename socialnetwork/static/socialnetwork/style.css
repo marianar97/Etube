@@ -180,9 +180,11 @@
     color: white;
 }
 
+.active-item-link{
+    color: white;
+}
+
 .active-item:hover {
-    background-color: #3f82dd;
-    border: solid 1px #3f82dd;
     color: white;
 }
 

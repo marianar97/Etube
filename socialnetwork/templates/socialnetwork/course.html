@@ -3,17 +3,17 @@
 {% load static %}
 
 {% block body %}
-
+<script src="{% static 'socialnetwork/youtube_player.js' %}" type="text/javascript"></script>
     <div class="grid-container">
         <div class="main-player">
-            <iframe  class="player" src={{fvideo.url}} frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
-            </iframe>
+            <div id="player" ></div>
+            <p id="video-id" videoId={{fvideo.id}} mins={{fvideo.total_mins}}></p>
         </div>
         <div class="playlist-parent">
             <div class="lesson-title">{{playlist.title}}</div>
             {% for video in videos%}
-                <div class="lesson-item {%if video.id == fvideo.id %} active-item {%endif%}">
-                    <a href="{% url 'course' playlist.id %}?v={{video.id}}" class="lesson-link {%if video.id == fvideo.id %} active-item {%endif%}">
+                <div class="lesson-item {%if video.id == fvideo.id %} active-item {%endif%}" id={{video.id}}>
+                    <a href="{% url 'course' playlist.id %}?v={{video.id}}" class="lesson-link {%if video.id == fvideo.id %} active-item-link {%endif%}">
                         {%if video.id == fvideo.id %}
                             <img src="{% static '/socialnetwork/images/playing.png' %}" height="20">
                         {% else %}
@@ -25,5 +25,6 @@
             {%endfor%}
         </div>
     </div>
+
 
 {% endblock%}
