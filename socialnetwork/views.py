@@ -291,7 +291,7 @@ def course_view(request, playlist_id):
 
     if not first_video: first_video = videos_in_playlist[0]
 
-    context = {'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video, 'perc_completed': int(user_course.perc_completed * 100)}
+    context = {'playlist': playlist,  'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video, 'perc_completed': int(user_course.perc_completed * 100)}
     return render(request, 'socialnetwork/course.html', context=context)
 
 @login_required

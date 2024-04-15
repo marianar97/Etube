@@ -16,7 +16,7 @@
             </div>
             {% for video in videos%}
                 <div class="lesson-item {%if video.id == fvideo.id %}active-item{%endif%} {%if video.watched == True%}watched-video{%else%}video-unwatched{%endif%}" id={{video.id}}>
-                    <a href="{% url 'course' course.id %}?v={{video.id}}" class="lesson-link {%if video.id == fvideo.id %} active-item-link {%endif%}">
+                    <a href="{% url 'course' playlist.id %}?v={{video.id}}" class="lesson-link {%if video.id == fvideo.id %} active-item-link {%endif%}">
                         {%if video.id == fvideo.id %}
                             <img src="{% static '/socialnetwork/images/playing.png' %}" height="20">
                         {% else %}
