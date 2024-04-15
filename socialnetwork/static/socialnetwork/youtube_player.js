@@ -11,7 +11,10 @@ var player;
 var intervalId;
 let vidId;
 let idValue; 
+let courseId;
+let sentVideoWatched = false;
 
+console.log("send video as watched " + sentVideoWatched)
 function onYouTubeIframeAPIReady() {
     vidId = document.getElementById("video-id");
     idValue = vidId.getAttribute("videoId");
@@ -53,6 +56,11 @@ function onPlayerStateChange(event) {
             intervalId = setInterval(function() {
                 if (isWatched() == true){
                     document.getElementById(idValue).style.backgroundColor = "green";
+                    if (sentVideoWatched === false) {
+                        sendWatchedVideo();
+                    } else {
+                        console.log("sent watched video is true")
+                    }
                 }
             }, 3000); // 3000 milliseconds = 3 seconds
         }
@@ -76,9 +84,25 @@ function isWatched(){
         console.log(cur);
         return false;
     }
-
 }
 
-function stopVideo(){
-    player.stopVideo();
+function sendWatchedVideo(){
+    console.log("sending video as watched")
+    crsfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    vidId = document.getElementById("video-id");
+    courseId = vidId.getAttribute("courseId");
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", '/video-watched', true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");  // Set the content type of the request
+    xhr.setRequestHeader('X-CSRFToken', crsfToken); 
+
+    xhr.onload == function(){
+        if(this.status == 200){
+            console.log(this.responseText);
+        }
+    }
+
+    xhr.send("videoId=" + encodeURIComponent(idValue) + "&courseId=" + encodeURIComponent(courseId));
+    sentVideoWatched = true;
+
 }

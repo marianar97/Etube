@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from googleapiclient.discovery import build
 from pathlib import Path
@@ -8,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.urls import reverse
 from allauth.socialaccount.models import SocialAccount
-from .models import Playlist, Profile, Video, Channel
+from .models import CourseVideo, Playlist, Profile, Video, Channel, Course, UserCourse
 from django.contrib.auth.models import User
 from allauth.socialaccount.models import SocialToken, SocialAccount
 from google.oauth2.credentials import Credentials
@@ -257,8 +258,48 @@ def course_view(request, playlist_id):
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
     playlist = Playlist.objects.get(id=playlist_id)
     videos_in_playlist = Video.objects.filter(playlist__id=playlist_id)
-    first_video = Video.objects.get(id=video_id) if video_id else videos_in_playlist[0]
-    context = {'playlist': playlist, 'picture': extra_data['picture'], 'videos': videos_in_playlist, 'fvideo':first_video}
+    
+    # convert the playlist to a course and save it
+    course = Course(
+            id = playlist.id,
+            total_mins = playlist.total_mins,
+            title = playlist.title,
+            thumbnail = playlist.thumbnail,
+            channel = playlist.channel
+    )
+    course.save()
+
+    # add the many to many relationship and set the percentage completed to 0
+    user_course, _ = UserCourse.objects.get_or_create(course=course, user=request.user)
+    user_course.save()
+
+    #connect the videos with the course and set the videos to unwatched and cur_secs to 0
+    for video in videos_in_playlist:
+        course_video, _ = CourseVideo.objects.get_or_create(course=course, video=video)
+    
+    first_video = None
+    if video_id:
+        first_video = Video.objects.get(id=video_id)
+    else:
+        courseVideos = CourseVideo.objects.filter(course=course)
+        for rel in courseVideos:
+            if rel.watched == False:
+                first_video = Video.objects.get(id=rel.video.id)
+                break
+        if not first_video:
+            first_video = videos_in_playlist[0]
+
+    videos = []
+    for video in videos_in_playlist:
+        v = {}
+        v['id'] = video.id 
+        v['title'] = video.title 
+        cv = CourseVideo.objects.get(course=course, video=video)
+        watched = cv.watched
+        v['watched'] = watched
+        videos.append(v)
+
+    context = {'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video}
     return render(request, 'socialnetwork/course.html', context=context)
 
 @login_required
@@ -291,6 +332,26 @@ def follow(request, username):
     context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info}
     return render(request, 'socialnetwork/other_profile.html', context)
 
+def video_watched(request):
+    video_id = request.POST.get('videoId')
+    course_id = request.POST.get('courseId')
+
+    print(f"got video watched, video_id: {video_id}, course_id: {course_id}")
+
+    video = get_object_or_404(Video, id=video_id)
+    course = get_object_or_404(Course, id=course_id)
+    course_video = get_object_or_404(CourseVideo, course=course, video=video)
+
+    course_video.watched = True
+    course_video.cur_secs = 0 # if watched start from the beggining
+    course_video.save()
+    response_data = {
+        'status': 200,
+        'message': 'Video updated as watched',
+        'videoId': video_id,
+        'courseId': course_id
+    }
+    return JsonResponse(response_data)
 
 def get_query(keywords: list) -> str:
     """
