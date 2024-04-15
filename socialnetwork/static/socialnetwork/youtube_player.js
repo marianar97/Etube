@@ -14,7 +14,6 @@ let idValue;
 let courseId;
 let sentVideoWatched = false;
 
-console.log("send video as watched " + sentVideoWatched)
 function onYouTubeIframeAPIReady() {
     vidId = document.getElementById("video-id");
     idValue = vidId.getAttribute("videoId");
@@ -78,10 +77,8 @@ function isWatched(){
     cur = player.getCurrentTime();
     tot_percentage = cur / (total_mins * 60);
     if (tot_percentage > .9) {
-        console.log("watched");
         return true;
     } else{
-        console.log(cur);
         return false;
     }
 }
@@ -91,15 +88,16 @@ function sendWatchedVideo(){
     crsfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     vidId = document.getElementById("video-id");
     courseId = vidId.getAttribute("courseId");
+
     let xhr = new XMLHttpRequest();
     xhr.open("POST", '/video-watched', true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");  // Set the content type of the request
     xhr.setRequestHeader('X-CSRFToken', crsfToken); 
 
-    xhr.onload == function(){
-        if(this.status == 200){
-            console.log(this.responseText);
-        }
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return
+        const obj = JSON.parse(this.responseText); 
+        document.getElementById("perc_completed").innerHTML = obj.perc_completed;
     }
 
     xhr.send("videoId=" + encodeURIComponent(idValue) + "&courseId=" + encodeURIComponent(courseId));

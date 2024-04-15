@@ -68,7 +68,6 @@ def user_playlists(request):
     youtube = get_youtube(access_token)
     user_playlists_items = get_user_playlists(youtube)
     if not user_playlists_items: #user doesn't have any playlists
-        print("no playlists")
         return render(request, 'socialnetwork/playlists.html', {'picture': extra_data['picture']})
     else:
         _update_playlists(request, user_playlists_items)
@@ -92,7 +91,6 @@ def _update_playlists(request, user_playlists_items):
     playlists_to_update = []
     for playlist in user_playlists_items:
         try:
-            print(f"request user: {request.user.playlist_set.all()}")
             playlist = request.user.playlist_set.get(id=playlist['id'])
             if not playlist:
                 playlists_to_update.append(playlist)
@@ -281,7 +279,6 @@ def course_view(request, playlist_id):
 
     videos = []
     for i, video in enumerate(videos_in_playlist):
-        print(f"video {i}: {video.title}")
         v = {}
         v['id'] = video.id 
         v['title'] = video.title 
@@ -294,8 +291,7 @@ def course_view(request, playlist_id):
 
     if not first_video: first_video = videos_in_playlist[0]
 
-    print(f"first video: {first_video}")
-    context = {'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video}
+    context = {'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video, 'perc_completed': int(user_course.perc_completed * 100)}
     return render(request, 'socialnetwork/course.html', context=context)
 
 @login_required
@@ -332,8 +328,6 @@ def video_watched(request):
     video_id = request.POST.get('videoId')
     course_id = request.POST.get('courseId')
 
-    print(f"got video watched, video_id: {video_id}, course_id: {course_id}")
-
     video = get_object_or_404(Video, id=video_id)
     course = get_object_or_404(Course, id=course_id)
     course_video = get_object_or_404(CourseVideo, course=course, video=video)
@@ -341,11 +335,25 @@ def video_watched(request):
     course_video.watched = True
     course_video.cur_secs = 0 # if watched start from the beggining
     course_video.save()
+
+    course_videos = CourseVideo.objects.filter(course=course)
+    total_num_videos = course_videos.count()
+    total_watched_videos = 0
+    for cv in course_videos:
+        if cv.watched == True:
+            total_watched_videos +=1
+    percentage_watched = total_watched_videos / total_num_videos
+
+    user_course = get_object_or_404(UserCourse, user=request.user, course=course)
+    user_course.perc_completed = percentage_watched
+    user_course.save()
+    
     response_data = {
         'status': 200,
         'message': 'Video updated as watched',
         'videoId': video_id,
-        'courseId': course_id
+        'courseId': course_id,
+        'perc_completed': int(percentage_watched*100)
     }
     return JsonResponse(response_data)
 

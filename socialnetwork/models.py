@@ -74,7 +74,7 @@ class CourseVideo(models.Model):
     cur_secs = models.IntegerField(default=0)
 
     def __str__(self):
-        return f"course: {self.course.title}, video: {self.user.title}, watched: {self.watched}, current_seconds: {self.cur_secs}"
+        return f"course: {self.course.title}, video: {self.video.title}, watched: {self.watched}, current_seconds: {self.cur_secs}"
 
     class Meta:
         unique_together = ('course', 'video')

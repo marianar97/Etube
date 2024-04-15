@@ -11,7 +11,9 @@
             <p id="video-id" videoId={{fvideo.id}} mins={{fvideo.total_mins}} courseId={{course.id}}></p>
         </div>
         <div class="playlist-parent">
-            <div class="lesson-title">{{course.title}}</div>
+            <div class="lesson-title">
+                {{course.title}} </br> <span id="perc_completed">{{perc_completed}}</span>% completed 
+            </div>
             {% for video in videos%}
                 <div class="lesson-item {%if video.id == fvideo.id %}active-item{%endif%} {%if video.watched == True%}watched-video{%else%}video-unwatched{%endif%}" id={{video.id}}>
                     <a href="{% url 'course' course.id %}?v={{video.id}}" class="lesson-link {%if video.id == fvideo.id %} active-item-link {%endif%}">
