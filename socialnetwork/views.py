@@ -261,7 +261,7 @@ def course_view(request, playlist_id):
     
     # convert the playlist to a course and save it
     course = Course(
-            id = playlist.id,
+            id = playlist.id + request.user.username,
             total_mins = playlist.total_mins,
             title = playlist.title,
             thumbnail = playlist.thumbnail,
@@ -277,28 +277,24 @@ def course_view(request, playlist_id):
     for video in videos_in_playlist:
         course_video, _ = CourseVideo.objects.get_or_create(course=course, video=video)
     
-    first_video = None
-    if video_id:
-        first_video = Video.objects.get(id=video_id)
-    else:
-        courseVideos = CourseVideo.objects.filter(course=course)
-        for rel in courseVideos:
-            if rel.watched == False:
-                first_video = Video.objects.get(id=rel.video.id)
-                break
-        if not first_video:
-            first_video = videos_in_playlist[0]
+    first_video = Video.objects.get(id=video_id) if video_id else None
 
     videos = []
-    for video in videos_in_playlist:
+    for i, video in enumerate(videos_in_playlist):
+        print(f"video {i}: {video.title}")
         v = {}
         v['id'] = video.id 
         v['title'] = video.title 
         cv = CourseVideo.objects.get(course=course, video=video)
         watched = cv.watched
+        if not first_video and cv.watched==False:
+            first_video = video
         v['watched'] = watched
         videos.append(v)
 
+    if not first_video: first_video = videos_in_playlist[0]
+
+    print(f"first video: {first_video}")
     context = {'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video}
     return render(request, 'socialnetwork/course.html', context=context)
 
@@ -496,9 +492,6 @@ def save_videos(all_videos: list):
                 # print(f"ERROR creating video : {vd}")
                 raise Exception(e)
 
-
-
-
 def get_video_mins_duration(duration: str) -> int:
     hours_pattern = re.compile(r'(\d+)H')
     minutes_pattern = re.compile(r'(\d+)M')
@@ -520,7 +513,6 @@ def get_video_mins_duration(duration: str) -> int:
 
     minutes, seconds = divmod(total_seconds, 60)
     return minutes
-
 
 def get_playlists_videos_and_duration(playlist_id: str):
     # print(f"searching for playlist with id {playlist_id}")
