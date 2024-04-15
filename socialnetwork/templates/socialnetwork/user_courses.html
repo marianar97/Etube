@@ -5,30 +5,77 @@
 {% block body %}
 
     <div>
-        <h1 class="display-6 info">Turn any playlist into a course by clicking on it</h1>
+        <h1 class="display-6 info">Continue your free personalized education</h1>
     </div>
     <div class="playlist-container">
-        <div class="list-container">
-
-            {% for item in items %}
-                <div class="vid-list">
-                    <div class="img__wrap">
-                        <a href="{% url 'course' item.id %}?">
-                            <img src={{item.playlist_thumbnail}} alt="" class="thumbnail img__img">
-                            <p class="img__description">{{item.duration}}</p>
-                        </a>
+        {%if not_started%}
+        <p class='course-type-title'>Not started</p>
+        <div class="list-course-container">           
+                {% for item in not_started %}
+                    <div class="vid-list">
+                        <div class="img__wrap">
+                            <a href="{% url 'user-course' item.id %}?">
+                                <img src={{item.course_thumbnail}} alt="" class="thumbnail img__img">
+                                <p class="img__description">{{item.duration}}</p>
+                            </a>
+                        </div>
+                        <div class="flex-div">
+                            <img src={{item.channel_thumbnail}} alt="" width="45" height="45" class="channel-thumbnail">
+                            <div class="vid-info">
+                                <a href="" class="playlist-title">{{item.title}}</a>
+                                <p>{{item.channel_name}}</p>
+                            </div>  
+                        </div> 
                     </div>
-                    <div class="flex-div">
-                        <img src={{item.channel_thumbnail}} alt="" width="45" height="45" class="channel-thumbnail">
-                        <div class="vid-info">
-                            <a href="" class="playlist-title">{{item.title}}</a>
-                            <p>{{item.channel_name}}</p>
-                        </div>  
-                    </div> 
-                </div>
-
-            {% endfor %}
-
+                {% endfor %}
         </div>
+        {%endif%}
+
+        {%if in_progress%}
+            <p class='course-type-title'>In progress</p>
+            <div class="list-course-container">
+                {% for item in in_progress %}
+                    <div class="vid-list">
+                        <div class="img__wrap">
+                            <a href="{% url 'user-course' item.id %}?">
+                                <img src={{item.course_thumbnail}} alt="" class="thumbnail img__img">
+                                <p class="img__description">{{item.duration}}</p>
+                            </a>
+                        </div>
+                        <div class="flex-div">
+                            <img src={{item.channel_thumbnail}} alt="" width="45" height="45" class="channel-thumbnail">
+                            <div class="vid-info">
+                                <a href="" class="playlist-title">{{item.title}}</a>
+                                <p>{{item.channel_name}}</p>
+                            </div>  
+                        </div> 
+                    </div>
+                {% endfor %}
+            </div>
+        {%endif%}
+
+        {%if done%}
+            <p class='course-type-title'>Done</p>
+            <div class="list-course-container">
+                {% for item in done %}
+                    <div class="vid-list">
+                        <div class="img__wrap">
+                            <a href="{% url 'user-course' item.id %}?">
+                                <img src={{item.course_thumbnail}} alt="" class="thumbnail img__img">
+                                <p class="img__description">{{item.duration}}</p>
+                            </a>
+                        </div>
+                        <div class="flex-div">
+                            <img src={{item.channel_thumbnail}} alt="" width="45" height="45" class="channel-thumbnail">
+                            <div class="vid-info">
+                                <a href="" class="playlist-title">{{item.title}}</a>
+                                <p>{{item.channel_name}}</p>
+                            </div>  
+                        </div> 
+                    </div>
+                {% endfor %}
+            </div>
+        {%endif%}
+
     </div>
 {% endblock %}

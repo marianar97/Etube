@@ -72,6 +72,7 @@ class CourseVideo(models.Model):
     video = models.ForeignKey(Video, on_delete=models.PROTECT)
     watched = models.BooleanField(default=0)
     cur_secs = models.IntegerField(default=0)
+    position = models.IntegerField(null=False)
 
     def __str__(self):
         return f"course: {self.course.title}, video: {self.video.title}, watched: {self.watched}, current_seconds: {self.cur_secs}"

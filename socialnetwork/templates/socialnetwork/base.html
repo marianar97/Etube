@@ -30,6 +30,9 @@
               <li class="nav-item">
                 <a class="nav-link {%if tab == 'user_playlists' %}active{%endif%}" href="{% url 'playlists' %}">Your playlists</a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link {%if tab == 'all-courses' %}active{%endif%}" href="{% url 'all-courses' %}">My courses</a>
+              </li>
             </ul>
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0"> <!-- This line has been updated -->
               <li class="nav-item dropdown">

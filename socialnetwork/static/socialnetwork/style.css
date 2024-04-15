@@ -69,6 +69,14 @@
     margin-top: 15px;
 }
 
+.list-course-container{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 400px));
+    column-gap: 20px;
+    row-gap: 30px;
+    margin-top: 15px;
+}
+
 .vid-list .thumbnail{
     width: 100%;
     border-radius: 5%;
@@ -194,4 +202,9 @@
 
 .watched-video{
     background-color: rgb(67, 152, 67);
+}
+
+.course-type-title{
+    font-size: 30px;
+    font-weight: bold;
 }

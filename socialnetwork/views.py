@@ -29,35 +29,36 @@ topics3 = ['Machine Learning', 'Large Lenguage Models', 'Data Structures']
 topics4 = ['React', 'Django Web development', 'CSS', 'Javascript']
 topics5 = ['web development', 'python']
 
+def all_user_courses_view(request):
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
+    user_courses = UserCourse.objects.filter(user=request.user)
+    not_started = []
+    in_progress = []
+    done = []
+    for user_course in user_courses:
+        # print(f"% completed {user_course.perc_completed}" )
+        course = user_course.course
+        el = {}
+        el['id'] = course.id
+        el['title'] = course.title if len(course.title) < 26 else course.title[:24]+'...'
+        el['course_thumbnail'] = course.thumbnail
+        el['duration'] = get_duration(course.total_mins)
+        c = Channel.objects.get(id=course.channel_id)
+        el['channel_thumbnail'] = c.thumbnail
+        el['channel_name'] = c.name
+        if user_course.perc_completed == 0:
+            not_started.append(el)
+        elif user_course.perc_completed == 1:
+            done.append(el)
+        else:
+            in_progress.append(el)
 
-def get_youtube(token):
-    client_id = CONFIG.get("ClientSecret", "client_id")
-    client_secret = CONFIG.get("ClientSecret", "client_secret")
-    token_uri = "https://oauth2.googleapis.com/token"
-    credentials = Credentials(
-        token=token,
-        # refresh_token=refresh_token,
-        token_uri=token_uri,  # This is the token endpoint from Google's OAuth server
-        client_id=client_id,
-        client_secret=client_secret,
-        scopes=['https://www.googleapis.com/auth/youtube.readonly']
-    )
-    youtube = build('youtube', 'v3', credentials=credentials)
-    return youtube
+    # print(f"Not started: {not_started}")
+    # print(f"In progress: {in_progress}")
+    # print(f"done: {done}")
+    context = {'picture': extra_data['picture'], 'not_started': not_started, 'in_progress': in_progress, 'done': done}
+    return render(request, 'socialnetwork/user_courses.html', context)
 
-def get_user_playlists(youtube):
-    """Fetches the user's YouTube playlists."""
-    try:
-        # This will get the first page of playlists
-        request = youtube.playlists().list(
-            part="snippet,contentDetails",  # part specifies the properties to be included in response objects
-            maxResults=50,  # Adjust the number of results per page
-            mine=True  # Set this to True to retrieve playlists of the authenticated user
-        )
-        return request.execute()['items']  # Executes the request
-    except Exception as e:
-        # print("An error occurred: %s" % e)
-        return None
 
 @login_required
 def user_playlists(request):
@@ -121,6 +122,35 @@ def user_courses(request):
     
     context = {'items': all_courses, 'picture': extra_data['picture'], 'tab':'user_playlists'}
     return render(request, 'socialnetwork/playlists.html', context)
+
+def get_youtube(token):
+    client_id = CONFIG.get("ClientSecret", "client_id")
+    client_secret = CONFIG.get("ClientSecret", "client_secret")
+    token_uri = "https://oauth2.googleapis.com/token"
+    credentials = Credentials(
+        token=token,
+        # refresh_token=refresh_token,
+        token_uri=token_uri,  # This is the token endpoint from Google's OAuth server
+        client_id=client_id,
+        client_secret=client_secret,
+        scopes=['https://www.googleapis.com/auth/youtube.readonly']
+    )
+    youtube = build('youtube', 'v3', credentials=credentials)
+    return youtube
+
+def get_user_playlists(youtube):
+    """Fetches the user's YouTube playlists."""
+    try:
+        # This will get the first page of playlists
+        request = youtube.playlists().list(
+            part="snippet,contentDetails",  # part specifies the properties to be included in response objects
+            maxResults=50,  # Adjust the number of results per page
+            mine=True  # Set this to True to retrieve playlists of the authenticated user
+        )
+        return request.execute()['items']  # Executes the request
+    except Exception as e:
+        # print("An error occurred: %s" % e)
+        return None
 
 
 def _get_users_videos(playlists_items, youtube):
@@ -292,8 +322,9 @@ def course_view(request, playlist_id):
     user_course.save()
 
     #connect the videos with the course and set the videos to unwatched and cur_secs to 0
-    for video in videos_in_playlist:
-        course_video, _ = CourseVideo.objects.get_or_create(course=course, video=video)
+    for i, video in enumerate(videos_in_playlist):
+        course_video, _ = CourseVideo.objects.get_or_create(course=course, video=video, position=i)
+        course_video.save()
     
     first_video = Video.objects.get(id=video_id) if video_id else None
 
@@ -313,6 +344,39 @@ def course_view(request, playlist_id):
 
     context = {'playlist': playlist,  'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video, 'perc_completed': int(user_course.perc_completed * 100)}
     return render(request, 'socialnetwork/course.html', context=context)
+
+@login_required
+def user_course_video_view(request, course_id):
+    print(f"course_id: {course_id}")
+    video_id = request.GET.get("v")
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
+    course = get_object_or_404(Course, id=course_id)
+
+    user_course = get_object_or_404(UserCourse, user=request.user, course=course)
+    courses_videos = CourseVideo.objects.filter(course=course).order_by('position')
+
+    first_video = Video.objects.get(id=video_id) if video_id else None
+
+    videos = []
+    for course_video in courses_videos:
+        video = course_video.video
+        v = {}
+        v['id'] = video.id 
+        v['title'] = video.title 
+        cv = CourseVideo.objects.get(course=course, video=video)
+        watched = cv.watched
+        if not first_video and cv.watched==False:
+            first_video = video
+        v['watched'] = watched
+        videos.append(v)
+
+    if not first_video: first_video = courses_videos[0].video
+
+    context = {'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video, 'perc_completed': int(user_course.perc_completed * 100)}
+    return render(request, 'socialnetwork/user_course_play.html', context=context)
+
+
+
 
 @login_required
 def unfollow(request, username):
