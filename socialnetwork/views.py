@@ -83,7 +83,7 @@ def user_playlists(request):
             el['channel_thumbnail'] = c.thumbnail
             el['channel_name'] = c.name
             info.append(el)
-        context = {'items': info, 'picture': extra_data['picture']}
+        context = {'items': info, 'picture': extra_data['picture'], 'tab':'user_playlists'}
         return render(request, 'socialnetwork/playlists.html', context)
 
 
@@ -102,6 +102,26 @@ def _update_playlists(request, user_playlists_items):
         save_channels(channels)
         save_playlists(playlists, user=request.user)
         save_videos(videos)
+
+def user_courses(request):
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
+    user_courses = UserCourse.objects.filter(user=request.user)
+    all_courses = []
+    for uc in user_courses:
+        course = get_object_or_404(Course, id=uc.course.id)
+        el = {}
+        el['id'] = course.id
+        el['title'] = course.title if len(course.title) < 26 else course.title[:24]+'...'
+        el['playlist_thumbnail'] = course.thumbnail
+        el['duration'] = get_duration(course.total_mins)
+        c = Channel.objects.get(id=course.channel_id)
+        el['channel_thumbnail'] = c.thumbnail
+        el['channel_name'] = c.name
+        all_courses.append(el)
+    
+    context = {'items': all_courses, 'picture': extra_data['picture'], 'tab':'user_playlists'}
+    return render(request, 'socialnetwork/playlists.html', context)
+
 
 def _get_users_videos(playlists_items, youtube):
 
@@ -209,7 +229,7 @@ def home(request):
         el['channel_name'] = c.name
         info.append(el)
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
-    context = {'items': info, 'picture': extra_data['picture']}
+    context = {'items': info, 'picture': extra_data['picture'], 'tab':'home'}
     # fill_database(topics1)
     # fill_database(topics1, topics2, topics3, topics4, topics5)
     
