@@ -13,5 +13,6 @@ urlpatterns = [
     path('playlists', views.user_playlists, name='playlists'),
     path('video-watched', views.video_watched, name='video-watched'),
     path('all-courses', views.all_user_courses_view, name="all-courses"),
-    path('user_course/<str:course_id>', views.user_course_video_view, name="user-course")
+    path('user_course/<str:course_id>', views.user_course_video_view, name="user-course"),
+    path('find_playlist_by_id/<str:course_id>', views.find_playlist_id, name="find-playlist-id")
 ]

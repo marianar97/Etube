@@ -328,7 +328,8 @@ def course_view(request, playlist_id):
             total_mins = playlist.total_mins,
             title = playlist.title,
             thumbnail = playlist.thumbnail,
-            channel = playlist.channel
+            channel = playlist.channel,
+            playlist=playlist
     )
     course.save()
 
@@ -442,35 +443,39 @@ def video_watched(request):
     }
     return JsonResponse(response_data)
 
-def duplicate_course_view(request, course_id, username):
-    course = get_object_or_404(Course, id=course_id)
-    video_id = request.GET.get("v")
+def all_courses(request):
+    home_courses = Course.objects.all()
+    info = []
+    for course in home_courses:
+        if request.user.course_set.filter(id=course.id).exists():
+            continue
+        el = {}
+        el['id'] = course.id
+        el['title'] = course.title if len(course.title) < 26 else course.title[:24]+'...'
+        el['playlist_thumbnail'] = course.thumbnail
+        el['duration'] = get_duration(course.total_mins)
+        c = Channel.objects.get(id=course.channel_id)
+        el['channel_thumbnail'] = c.thumbnail
+        el['channel_name'] = c.name
+        info.append(el)
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
+    context = {'items': info, 'picture': extra_data['picture'], 'tab':'home'}
+    # fill_database(topics1)
+    # fill_database(topics1, topics2, topics3, topics4, topics5)
+    
+    if Profile.objects.filter(user=request.user).count() == 0:
+        new_user_profile = Profile.objects.create(user = request.user, picture = extra_data['picture'])
+        username = request.user.username
+        # print(f"creating new profile with username={username}")
+        new_user_profile.save()
+    
+    return render(request, 'socialnetwork/home.html', context)
 
 
-    # user_course = get_object_or_404(UserCourse, user=request.user, course=course)
-    # courses_videos = CourseVideo.objects.filter(course=course).order_by('position')
-
-    # first_video = Video.objects.get(id=video_id) if video_id else None
-
-    # videos = []
-    # for course_video in courses_videos:
-    #     video = course_video.video
-    #     v = {}
-    #     v['id'] = video.id 
-    #     v['title'] = video.title 
-    #     cv = CourseVideo.objects.get(course=course, video=video)
-    #     watched = cv.watched
-    #     if not first_video and cv.watched==False:
-    #         first_video = video
-    #     v['watched'] = watched
-    #     videos.append(v)
-
-    # if not first_video: first_video = courses_videos[0].video
-
-    # context = {'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video, 'perc_completed': int(user_course.perc_completed * 100)}
-    # return render(request, 'socialnetwork/user_course_play.html', context=context)
-
+def find_playlist_id(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    playlist = course.playlist
+    return redirect(reverse('course', kwargs={'playlist_id': playlist.id}))
 
 def get_query(keywords: list) -> str:
     """

@@ -32,6 +32,7 @@ class Course(models.Model):
     total_mins = models.PositiveIntegerField()
     title = models.CharField(max_length=200)
     thumbnail =  models.CharField(max_length=300)
+    playlist = models.ForeignKey(Playlist, on_delete=models.CASCADE)
     channel = models.ForeignKey(Channel, max_length=70, on_delete=models.PROTECT)
 
     def __str__(self):

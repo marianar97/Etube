@@ -65,7 +65,7 @@
           {% for item in courses %}
               <div class="vid-list">
                   <div class="img__wrap">
-                      <a href="{% url 'user-course' item.id %}?">
+                      <a href="{% url 'find-playlist-id' item.id %}?">
                           <img src={{item.course_thumbnail}} alt="" class="thumbnail img__img">
                           <p class="img__description">{{item.duration}}</p>
                       </a>
