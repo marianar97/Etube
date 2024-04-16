@@ -56,9 +56,8 @@ def all_user_courses_view(request):
     # print(f"Not started: {not_started}")
     # print(f"In progress: {in_progress}")
     # print(f"done: {done}")
-    context = {'picture': extra_data['picture'], 'not_started': not_started, 'in_progress': in_progress, 'done': done}
+    context = {'picture': extra_data['picture'], 'not_started': not_started, 'in_progress': in_progress, 'done': done, 'tab':'my_courses'}
     return render(request, 'socialnetwork/user_courses.html', context)
-
 
 @login_required
 def user_playlists(request):
@@ -69,7 +68,7 @@ def user_playlists(request):
     youtube = get_youtube(access_token)
     user_playlists_items = get_user_playlists(youtube)
     if not user_playlists_items: #user doesn't have any playlists
-        return render(request, 'socialnetwork/playlists.html', {'picture': extra_data['picture']})
+        return render(request, 'socialnetwork/playlists.html', {'picture': extra_data['picture'], 'tab': 'user_playlists'})
     else:
         _update_playlists(request, user_playlists_items)
         home_playlists = request.user.playlist_set.all()
@@ -86,7 +85,6 @@ def user_playlists(request):
             info.append(el)
         context = {'items': info, 'picture': extra_data['picture'], 'tab':'user_playlists'}
         return render(request, 'socialnetwork/playlists.html', context)
-
 
 def _update_playlists(request, user_playlists_items):
     playlists_to_update = []
@@ -151,7 +149,6 @@ def get_user_playlists(youtube):
     except Exception as e:
         # print("An error occurred: %s" % e)
         return None
-
 
 def _get_users_videos(playlists_items, youtube):
 
@@ -241,7 +238,6 @@ def _get_videos_of_user_playlists_and_duration(playlist_id, youtube):
 
     return total_mins, videos
 
-
 @login_required                  
 def home(request):
     home_playlists = Playlist.objects.all()
@@ -296,11 +292,27 @@ def profile_view(request, username):
         context['num_courses'] = user_courses.count()
         return render(request, 'socialnetwork/profile.html', context)
     else:
+        print(f"all users: {User.objects.all()}")
         user = User.objects.get(username=username)
         user_info = SocialAccount.objects.get(user=user).extra_data
         user_courses = UserCourse.objects.filter(user=user)
         profile = get_object_or_404(Profile, user=user)
-        context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info, 'num_courses': user_courses.count()}
+        user_courses = UserCourse.objects.filter(user=user)
+        courses = []
+        for user_course in user_courses:
+            # print(f"% completed {user_course.perc_completed}" )
+            course = user_course.course
+            el = {}
+            el['id'] = course.id
+            el['title'] = course.title if len(course.title) < 26 else course.title[:24]+'...'
+            el['course_thumbnail'] = course.thumbnail
+            el['duration'] = get_duration(course.total_mins)
+            c = Channel.objects.get(id=course.channel_id)
+            el['channel_thumbnail'] = c.thumbnail
+            el['channel_name'] = c.name
+            courses.append(el)
+
+        context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info, 'num_courses': user_courses.count(), 'courses': courses}
         return render(request, 'socialnetwork/other_profile.html', context)
 
 @login_required
@@ -378,9 +390,6 @@ def user_course_video_view(request, course_id):
     context = {'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video, 'perc_completed': int(user_course.perc_completed * 100)}
     return render(request, 'socialnetwork/user_course_play.html', context=context)
 
-
-
-
 @login_required
 def unfollow(request, username):
     user = User.objects.get(username=username)
@@ -389,12 +398,7 @@ def unfollow(request, username):
     request.user.profile.following.remove(user)
     request.user.profile.save()
 
-    extra_data = SocialAccount.objects.get(user=request.user).extra_data
-    user = User.objects.get(username=username)
-    user_info = SocialAccount.objects.get(user=user).extra_data
-    profile = get_object_or_404(Profile, user=user)
-    context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info}
-    return render(request, 'socialnetwork/other_profile.html', context)
+    return redirect(reverse('profile',kwargs={'username':username}))
 
 @login_required
 def follow(request, username):
@@ -403,13 +407,7 @@ def follow(request, username):
     # add user
     request.user.profile.following.add(user)
     request.user.profile.save()
-
-    extra_data = SocialAccount.objects.get(user=request.user).extra_data
-    user = User.objects.get(username=username)
-    user_info = SocialAccount.objects.get(user=user).extra_data
-    profile = get_object_or_404(Profile, user=user)
-    context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info}
-    return render(request, 'socialnetwork/other_profile.html', context)
+    return redirect(reverse('profile',kwargs={'username':username}))
 
 def video_watched(request):
     video_id = request.POST.get('videoId')
@@ -443,6 +441,36 @@ def video_watched(request):
         'perc_completed': int(percentage_watched*100)
     }
     return JsonResponse(response_data)
+
+def duplicate_course_view(request, course_id, username):
+    course = get_object_or_404(Course, id=course_id)
+    video_id = request.GET.get("v")
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
+
+
+    # user_course = get_object_or_404(UserCourse, user=request.user, course=course)
+    # courses_videos = CourseVideo.objects.filter(course=course).order_by('position')
+
+    # first_video = Video.objects.get(id=video_id) if video_id else None
+
+    # videos = []
+    # for course_video in courses_videos:
+    #     video = course_video.video
+    #     v = {}
+    #     v['id'] = video.id 
+    #     v['title'] = video.title 
+    #     cv = CourseVideo.objects.get(course=course, video=video)
+    #     watched = cv.watched
+    #     if not first_video and cv.watched==False:
+    #         first_video = video
+    #     v['watched'] = watched
+    #     videos.append(v)
+
+    # if not first_video: first_video = courses_videos[0].video
+
+    # context = {'course': course, 'picture': extra_data['picture'], 'videos': videos, 'fvideo':first_video, 'perc_completed': int(user_course.perc_completed * 100)}
+    # return render(request, 'socialnetwork/user_course_play.html', context=context)
+
 
 def get_query(keywords: list) -> str:
     """
@@ -662,4 +690,3 @@ def get_playlists_videos_and_duration(playlist_id: str):
     
     return total_mins, videos
         
-    

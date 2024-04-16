@@ -59,50 +59,30 @@
     </div>
   </div>
   <div class="tab-content" id="pills-tabContent">
-    
-    <div class="tab-pane fade show active" id="pills-friends" role="tabpanel" aria-labelledby="pills-friends-tab" tabindex="0">
-      <div class="d-sm-flex align-items-center justify-content-between mt-3 mb-4">
-        <h3 class="mb-3 mb-sm-0 fw-semibold d-flex align-items-center">Following <span class="badge text-bg-secondary fs-2 rounded-4 py-1 px-2 ms-2">20</span></h3>
+    {%if courses%}
+    <p class='course-type-title'>Courses:</p>
+      <div class="list-course-container">
+          {% for item in courses %}
+              <div class="vid-list">
+                  <div class="img__wrap">
+                      <a href="{% url 'user-course' item.id %}?">
+                          <img src={{item.course_thumbnail}} alt="" class="thumbnail img__img">
+                          <p class="img__description">{{item.duration}}</p>
+                      </a>
+                  </div>
+                  <div class="flex-div">
+                      <img src={{item.channel_thumbnail}} alt="" width="45" height="45" class="channel-thumbnail">
+                      <div class="vid-info">
+                          <a href="" class="playlist-title">{{item.title}}</a>
+                          <p>{{item.channel_name}}</p>
+                      </div>  
+                  </div> 
+              </div>
+          {% endfor %}
       </div>
-      <div class="row">
-        {% for user_profile in profile.following.all%}
-        <div class="col-sm-6 col-lg-4">
-          <div class="card hover-img">
-            <div class="card-body p-4 text-center border-bottom">
-              <img src="https://bootdey.com/img/Content/avatar/avatar1.png" alt="" class="rounded-circle mb-3" width="80" height="80">
-              <h5 class="fw-semibold mb-0">Betty Adams</h5>
-              <span class="text-dark fs-2">Medical Secretary</span>
-            </div>
-            <ul class="px-2 py-2 bg-light list-unstyled d-flex align-items-center justify-content-center mb-0">
-              <li class="position-relative">
-                <a class="text-primary d-flex align-items-center justify-content-center p-2 fs-5 rounded-circle fw-semibold" href="javascript:void(0)">
-                  <i class="ti ti-brand-facebook"></i>
-                </a>
-              </li>
-              <li class="position-relative">
-                <a class="text-danger d-flex align-items-center justify-content-center p-2 fs-5 rounded-circle fw-semibold " href="javascript:void(0)">
-                  <i class="ti ti-brand-instagram"></i>
-                </a>
-              </li>
-              <li class="position-relative">
-                <a class="text-info d-flex align-items-center justify-content-center p-2 fs-5 rounded-circle fw-semibold " href="javascript:void(0)">
-                  <i class="ti ti-brand-github"></i>
-                </a>
-              </li>
-              <li class="position-relative">
-                <a class="text-secondary d-flex align-items-center justify-content-center p-2 fs-5 rounded-circle fw-semibold " href="javascript:void(0)">
-                  <i class="ti ti-brand-twitter"></i>
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-        {% empty %}
-         <p>Not following anyone yet</p>
-        {% endfor %}
-      </div>
-    </div>
-   
+      {% else %}
+      <p class='course-type-title'>No courses yet</p>
+    {%endif%}
   </div>
 </div>
 {% endblock %}
