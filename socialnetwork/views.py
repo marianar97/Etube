@@ -292,12 +292,15 @@ def profile_view(request, username):
         number_of_following = profile.following.count()
         context['number_following'] = number_of_following
         context['profile'] = profile
+        user_courses = UserCourse.objects.filter(user=request.user)
+        context['num_courses'] = user_courses.count()
         return render(request, 'socialnetwork/profile.html', context)
     else:
         user = User.objects.get(username=username)
         user_info = SocialAccount.objects.get(user=user).extra_data
+        user_courses = UserCourse.objects.filter(user=user)
         profile = get_object_or_404(Profile, user=user)
-        context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info}
+        context = {'user': user, 'profile': profile, 'picture': extra_data['picture'], 'user_info':user_info, 'num_courses': user_courses.count()}
         return render(request, 'socialnetwork/other_profile.html', context)
 
 @login_required
