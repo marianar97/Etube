@@ -87,142 +87,6 @@ def user_playlists(request):
         context = {'items': info, 'picture': extra_data['picture'], 'tab':'user_playlists'}
         return render(request, 'socialnetwork/playlists.html', context)
 
-def user_courses(request):
-    extra_data = SocialAccount.objects.get(user=request.user).extra_data
-    user_courses = UserCourse.objects.filter(user=request.user)
-    all_courses = []
-    for uc in user_courses:
-        course = get_object_or_404(Course, id=uc.course.id)
-        el = {}
-        el['id'] = course.id
-        el['title'] = course.title if len(course.title) < 26 else course.title[:24]+'...'
-        el['playlist_thumbnail'] = course.thumbnail
-        el['duration'] = get_duration(course.total_mins)
-        c = Channel.objects.get(id=course.channel_id)
-        el['channel_thumbnail'] = c.thumbnail
-        el['channel_name'] = c.name
-        all_courses.append(el)
-    
-    context = {'items': all_courses, 'picture': extra_data['picture'], 'tab':'user_playlists'}
-    return render(request, 'socialnetwork/playlists.html', context)
-
-def get_youtube(token):
-    client_id = CONFIG.get("ClientSecret", "client_id")
-    client_secret = CONFIG.get("ClientSecret", "client_secret")
-    token_uri = "https://oauth2.googleapis.com/token"
-    credentials = Credentials(
-        token=token,
-        # refresh_token=refresh_token,
-        token_uri=token_uri,  # This is the token endpoint from Google's OAuth server
-        client_id=client_id,
-        client_secret=client_secret,
-        scopes=['https://www.googleapis.com/auth/youtube.readonly']
-    )
-    youtube = build('youtube', 'v3', credentials=credentials)
-    return youtube
-
-def get_user_playlists(youtube):
-    """Fetches the user's YouTube playlists."""
-    try:
-        # This will get the first page of playlists
-        request = youtube.playlists().list(
-            part="snippet,contentDetails",  # part specifies the properties to be included in response objects
-            maxResults=50,  # Adjust the number of results per page
-            mine=True  # Set this to True to retrieve playlists of the authenticated user
-        )
-        return request.execute()['items']  # Executes the request
-    except Exception as e:
-        # print("An error occurred: %s" % e)
-        return None
-
-def _get_users_videos(playlists_items, youtube):
-
-    # print(f"playlist_items: {playlists_items}")
-    # print("\n"*3)
-
-    # return 
-    playlists = []
-    videos = []
-    channels = []
-    
-    for item in playlists_items:
-        try: 
-            playlist = {}
-            channel = {}
-            playlist['playlist_id'] = item['id']
-            playlist['title'] = item['snippet']['title']
-            playlist['thumbnail'] = item['snippet']['thumbnails']['medium']['url']
-            playlist['channel_id'] = item['snippet']['channelId']
-            # print(f"item id: {item['id']}, title: {playlist['title']}")
-            channel_name, channel_thumbnail = get_channel_info(playlist['channel_id'])
-            duration, pl_videos = _get_videos_of_user_playlists_and_duration(playlist['playlist_id'], youtube)
-            duration, pl_videos
-            playlist['duration'] = duration
-            channel['id'] = playlist['channel_id']
-            channel['name'] = channel_name
-            channel['thumbnail'] = channel_thumbnail
-            channels.append(channel)
-            playlists.append(playlist)
-            videos.append(pl_videos)
-        except Exception as e:
-            print(f"Exception in _get_users_videos: {e}")
-            continue
-    
-    return playlists, videos, channels
-
-def _get_videos_of_user_playlists_and_duration(playlist_id, youtube):
-    next_page_token = None
-    videos = {}
-    total_mins  = 0
-
-    while True:
-        pl_request = youtube.playlistItems().list(
-            part="snippet",
-            playlistId=playlist_id,
-            maxResults=50  # You can fetch up to 50 items per request
-        )
-
-        pl_response = pl_request.execute()
-        # print(f"pl_response: {len(pl_response)}")
-
-        ids = []
-        for item in pl_response['items']:
-            # print(f"item: {item}")
-            video = {}
-            video['title'] = item['snippet']['title']
-            # video['description'] = item['snippet']['description']
-            video['thumbnail'] = item['snippet']['thumbnails']
-
-            video['playlist_id'] = playlist_id
-            id_video = item['snippet']['resourceId']['videoId']
-            videos[id_video] = video 
-            ids.append(id_video)
-                
-        vid_request = youtube.videos().list(
-                part="contentDetails, player",
-                id=",".join(ids)
-        )
-
-        vid_response = vid_request.execute()
-        for video in vid_response['items']:
-            if video['id'] not in videos:
-                continue
-            
-            id = video['id']
-            duration = get_video_mins_duration(video['contentDetails']['duration'])
-            videos[id]['duration'] = duration
-            iframe_string = video['player']['embedHtml']
-            match = re.search(r'//([a-zA-Z0-9./_-]+)"', iframe_string)
-            src = match.group(1)
-            total_mins += duration    
-            videos[id]['url'] = '//'+src    
-
-        next_page_token = pl_response.get('nextPageToken')
-        if not next_page_token:
-            break
-
-    return total_mins, videos
-
 @login_required                  
 def home(request):
     home_playlists = Playlist.objects.all()
@@ -471,6 +335,124 @@ def find_playlist_id(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     playlist = course.playlist
     return redirect(reverse('course', kwargs={'playlist_id': playlist.id}))
+
+def get_youtube(token):
+    client_id = CONFIG.get("ClientSecret", "client_id")
+    client_secret = CONFIG.get("ClientSecret", "client_secret")
+    token_uri = "https://oauth2.googleapis.com/token"
+    credentials = Credentials(
+        token=token,
+        # refresh_token=refresh_token,
+        token_uri=token_uri,  # This is the token endpoint from Google's OAuth server
+        client_id=client_id,
+        client_secret=client_secret,
+        scopes=['https://www.googleapis.com/auth/youtube.readonly']
+    )
+    youtube = build('youtube', 'v3', credentials=credentials)
+    return youtube
+
+def get_user_playlists(youtube):
+    """Fetches the user's YouTube playlists."""
+    try:
+        # This will get the first page of playlists
+        request = youtube.playlists().list(
+            part="snippet,contentDetails",  # part specifies the properties to be included in response objects
+            maxResults=50,  # Adjust the number of results per page
+            mine=True  # Set this to True to retrieve playlists of the authenticated user
+        )
+        return request.execute()['items']  # Executes the request
+    except Exception as e:
+        # print("An error occurred: %s" % e)
+        return None
+
+def _get_users_videos(playlists_items, youtube):
+
+    # print(f"playlist_items: {playlists_items}")
+    # print("\n"*3)
+
+    # return 
+    playlists = []
+    videos = []
+    channels = []
+    
+    for item in playlists_items:
+        try: 
+            playlist = {}
+            channel = {}
+            playlist['playlist_id'] = item['id']
+            playlist['title'] = item['snippet']['title']
+            playlist['thumbnail'] = item['snippet']['thumbnails']['medium']['url']
+            playlist['channel_id'] = item['snippet']['channelId']
+            # print(f"item id: {item['id']}, title: {playlist['title']}")
+            channel_name, channel_thumbnail = get_channel_info(playlist['channel_id'])
+            duration, pl_videos = _get_videos_of_user_playlists_and_duration(playlist['playlist_id'], youtube)
+            duration, pl_videos
+            playlist['duration'] = duration
+            channel['id'] = playlist['channel_id']
+            channel['name'] = channel_name
+            channel['thumbnail'] = channel_thumbnail
+            channels.append(channel)
+            playlists.append(playlist)
+            videos.append(pl_videos)
+        except Exception as e:
+            print(f"Exception in _get_users_videos: {e}")
+            continue
+    
+    return playlists, videos, channels
+
+
+def _get_videos_of_user_playlists_and_duration(playlist_id, youtube):
+    next_page_token = None
+    videos = {}
+    total_mins  = 0
+
+    while True:
+        pl_request = youtube.playlistItems().list(
+            part="snippet",
+            playlistId=playlist_id,
+            maxResults=50  # You can fetch up to 50 items per request
+        )
+
+        pl_response = pl_request.execute()
+        # print(f"pl_response: {len(pl_response)}")
+
+        ids = []
+        for item in pl_response['items']:
+            # print(f"item: {item}")
+            video = {}
+            video['title'] = item['snippet']['title']
+            # video['description'] = item['snippet']['description']
+            video['thumbnail'] = item['snippet']['thumbnails']
+
+            video['playlist_id'] = playlist_id
+            id_video = item['snippet']['resourceId']['videoId']
+            videos[id_video] = video 
+            ids.append(id_video)
+                
+        vid_request = youtube.videos().list(
+                part="contentDetails, player",
+                id=",".join(ids)
+        )
+
+        vid_response = vid_request.execute()
+        for video in vid_response['items']:
+            if video['id'] not in videos:
+                continue
+            
+            id = video['id']
+            duration = get_video_mins_duration(video['contentDetails']['duration'])
+            videos[id]['duration'] = duration
+            iframe_string = video['player']['embedHtml']
+            match = re.search(r'//([a-zA-Z0-9./_-]+)"', iframe_string)
+            src = match.group(1)
+            total_mins += duration    
+            videos[id]['url'] = '//'+src    
+
+        next_page_token = pl_response.get('nextPageToken')
+        if not next_page_token:
+            break
+
+    return total_mins, videos
 
 def get_query(keywords: list) -> str:
     """
