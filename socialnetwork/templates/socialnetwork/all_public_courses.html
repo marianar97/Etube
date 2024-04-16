@@ -1,0 +1,37 @@
+{% extends "socialnetwork/base.html" %}
+
+{% load static %}
+
+{% block body %}
+
+    <div>
+        <h1 class="display-6 info">Turn any playlist into a course by clicking on it</h1>
+    </div>
+    <div class="playlist-container">
+        <div class="list-course-container">
+
+            {% for item in items %}
+                <div class="vid-list">
+                    <div class="img__wrap">
+                        <a href="{% url 'find-playlist-id' item.id %}?">
+                            <img src={{item.playlist_thumbnail}} alt="" class="thumbnail img__img">
+                            <p class="img__description">{{item.duration}}</p>
+                        </a>
+                    </div>
+                    <div class="flex-div">
+                        <img src={{item.channel_thumbnail}} alt="" width="45" height="45" class="channel-thumbnail">
+                        <div class="vid-info">
+                            <a href="" class="playlist-title">{{item.title}}</a>
+                            <p><a href="{% url 'profile' item.channel_name %}">{{item.channel_name}}</a></p>
+                        </div>  
+                    </div> 
+                </div>
+
+            {% endfor %}
+
+        </div>
+    </div>
+
+
+
+{% endblock %}

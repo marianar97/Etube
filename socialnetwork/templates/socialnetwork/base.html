@@ -25,7 +25,7 @@
           <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item">
-                <a class="nav-link {%if tab == 'home'%} active underline {%endif%}" aria-current="page" href="{% url 'home' %}">Public courses</a>
+                <a class="nav-link {%if tab == 'home'%} active underline {%endif%}" aria-current="page" href="{% url 'home' %}">Public playlists</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link {%if tab == 'user_playlists' %}active underline{%endif%}" href="{% url 'playlists' %}">Your playlists</a>
@@ -33,7 +33,11 @@
               <li class="nav-item">
                 <a class="nav-link {%if tab == 'my_courses' %}active underline{%endif%}" href="{% url 'all-courses' %}">My courses</a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link {%if tab == 'public_courses' %}active underline{%endif%}" href="{% url 'public-courses' %}">Public courses</a>
+              </li>
             </ul>
+            
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0"> <!-- This line has been updated -->
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle navbar-brand" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

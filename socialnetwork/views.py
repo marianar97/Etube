@@ -29,6 +29,7 @@ topics3 = ['Machine Learning', 'Large Lenguage Models', 'Data Structures']
 topics4 = ['React', 'Django Web development', 'CSS', 'Javascript']
 topics5 = ['web development', 'python']
 
+@login_required
 def all_user_courses_view(request):
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
     user_courses = UserCourse.objects.filter(user=request.user)
@@ -85,22 +86,6 @@ def user_playlists(request):
             info.append(el)
         context = {'items': info, 'picture': extra_data['picture'], 'tab':'user_playlists'}
         return render(request, 'socialnetwork/playlists.html', context)
-
-def _update_playlists(request, user_playlists_items):
-    playlists_to_update = []
-    for playlist in user_playlists_items:
-        try:
-            playlist = request.user.playlist_set.get(id=playlist['id'])
-            if not playlist:
-                playlists_to_update.append(playlist)
-        except Exception as e:
-            pass
-    
-    if playlists_to_update:
-        playlists, videos, channels = _get_users_videos(playlists_to_update, youtube)
-        save_channels(channels)
-        save_playlists(playlists, user=request.user)
-        save_videos(videos)
 
 def user_courses(request):
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
@@ -410,6 +395,22 @@ def follow(request, username):
     request.user.profile.save()
     return redirect(reverse('profile',kwargs={'username':username}))
 
+def _update_playlists(request, user_playlists_items):
+    playlists_to_update = []
+    for playlist in user_playlists_items:
+        try:
+            playlist = request.user.playlist_set.get(id=playlist['id'])
+            if not playlist:
+                playlists_to_update.append(playlist)
+        except Exception as e:
+            pass
+    
+    if playlists_to_update:
+        playlists, videos, channels = _get_users_videos(playlists_to_update, youtube)
+        save_channels(channels)
+        save_playlists(playlists, user=request.user)
+        save_videos(videos)
+
 def video_watched(request):
     video_id = request.POST.get('videoId')
     course_id = request.POST.get('courseId')
@@ -443,7 +444,8 @@ def video_watched(request):
     }
     return JsonResponse(response_data)
 
-def all_courses(request):
+@login_required
+def all_public_courses(request):
     home_courses = Course.objects.all()
     info = []
     for course in home_courses:
@@ -454,23 +456,16 @@ def all_courses(request):
         el['title'] = course.title if len(course.title) < 26 else course.title[:24]+'...'
         el['playlist_thumbnail'] = course.thumbnail
         el['duration'] = get_duration(course.total_mins)
-        c = Channel.objects.get(id=course.channel_id)
-        el['channel_thumbnail'] = c.thumbnail
-        el['channel_name'] = c.name
+        user = UserCourse.objects.filter(course=course).first().user
+        profile = get_object_or_404(Profile, user=user)
+        el['channel_thumbnail'] = profile.picture
+        el['channel_name'] = user.username
         info.append(el)
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
-    context = {'items': info, 'picture': extra_data['picture'], 'tab':'home'}
+    context = {'items': info, 'picture': extra_data['picture'], 'tab':'public_courses'}
     # fill_database(topics1)
     # fill_database(topics1, topics2, topics3, topics4, topics5)
-    
-    if Profile.objects.filter(user=request.user).count() == 0:
-        new_user_profile = Profile.objects.create(user = request.user, picture = extra_data['picture'])
-        username = request.user.username
-        # print(f"creating new profile with username={username}")
-        new_user_profile.save()
-    
-    return render(request, 'socialnetwork/home.html', context)
-
+    return render(request, 'socialnetwork/all_public_courses.html', context)
 
 def find_playlist_id(request, course_id):
     course = get_object_or_404(Course, id=course_id)
