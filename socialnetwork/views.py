@@ -20,9 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 CONFIG.read(BASE_DIR / "config.ini")
 
-API_KEY =  CONFIG.get("Django", "secret")
-
-youtube = build('youtube', 'v3', developerKey="AIzaSyBGi7F7uIYldLKEXlldexCbJlgXWkio3wA")
+youtube = build('youtube', 'v3', CONFIG.get("Django", "api_key"))
 topics1 = ['computer science', 'algorithms']
 topics2 = ['compilers', 'java', 'javascript', 'numpy', 'sklearn']
 topics3 = ['Machine Learning', 'Large Lenguage Models', 'Data Structures'] 
@@ -259,22 +257,6 @@ def follow(request, username):
     request.user.profile.save()
     return redirect(reverse('profile',kwargs={'username':username}))
 
-def _update_playlists(request, user_playlists_items):
-    playlists_to_update = []
-    for playlist in user_playlists_items:
-        try:
-            playlist = request.user.playlist_set.get(id=playlist['id'])
-            if not playlist:
-                playlists_to_update.append(playlist)
-        except Exception as e:
-            pass
-    
-    if playlists_to_update:
-        playlists, videos, channels = _get_users_videos(playlists_to_update, youtube)
-        save_channels(channels)
-        save_playlists(playlists, user=request.user)
-        save_videos(videos)
-
 def video_watched(request):
     video_id = request.POST.get('videoId')
     course_id = request.POST.get('courseId')
@@ -331,6 +313,7 @@ def all_public_courses(request):
     # fill_database(topics1, topics2, topics3, topics4, topics5)
     return render(request, 'socialnetwork/all_public_courses.html', context)
 
+@login_required
 def find_playlist_id(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     playlist = course.playlist
@@ -350,6 +333,22 @@ def get_youtube(token):
     )
     youtube = build('youtube', 'v3', credentials=credentials)
     return youtube
+
+def _update_playlists(request, user_playlists_items):
+    playlists_to_update = []
+    for playlist in user_playlists_items:
+        try:
+            playlist = request.user.playlist_set.get(id=playlist['id'])
+            if not playlist:
+                playlists_to_update.append(playlist)
+        except Exception as e:
+            pass
+    
+    if playlists_to_update:
+        playlists, videos, channels = _get_users_videos(playlists_to_update, youtube)
+        save_channels(channels)
+        save_playlists(playlists, user=request.user)
+        save_videos(videos)
 
 def get_user_playlists(youtube):
     """Fetches the user's YouTube playlists."""
@@ -399,7 +398,6 @@ def _get_users_videos(playlists_items, youtube):
             continue
     
     return playlists, videos, channels
-
 
 def _get_videos_of_user_playlists_and_duration(playlist_id, youtube):
     next_page_token = None

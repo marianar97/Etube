@@ -22,7 +22,7 @@
                         <img src={{item.channel_thumbnail}} alt="" width="45" height="45" class="channel-thumbnail">
                         <div class="vid-info">
                             <a href="" class="playlist-title">{{item.title}}</a>
-                            <p><a href="{% url 'profile' item.channel_name %}">{{item.channel_name}}</a></p>
+                            <p><a href="{% url 'profile' item.channel_name %}" class="user-link">{{item.channel_name}}</a></p>
                         </div>  
                     </div> 
                 </div>

@@ -212,3 +212,9 @@
 .underline{
     text-decoration: underline;
 }
+
+.user-link{
+    text-decoration: none;
+    color: black;
+    font-weight: bold;
+}
