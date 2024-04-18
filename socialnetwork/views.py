@@ -87,6 +87,10 @@ def user_playlists(request):
 
 @login_required                  
 def home(request):
+    if not SocialAccount.objects.filter(user=request.user).exists():
+        # Redirect the user to a page indicating they need to link a social account
+        return render(request, 'socialnetwork/login.html')
+
     home_playlists = Playlist.objects.all()
     info = []
     for playlist in home_playlists:
