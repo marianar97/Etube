@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 CONFIG.read(BASE_DIR / "config.ini")
 
-youtube = build('youtube', 'v3', developerKey="AIzaSyDtsJ92iKmspU1G1mblmnRjmV1IjLr4LrY")
+youtube = build('youtube', 'v3', developerKey=CONFIG.get("Django", "api_key"))
 topics1 = ['computer science', 'algorithms']
 topics2 = ['compilers', 'java', 'javascript', 'numpy', 'sklearn']
 topics3 = ['Machine Learning', 'Large Lenguage Models', 'Data Structures'] 
@@ -107,7 +107,7 @@ def home(request):
         info.append(el)
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
     context = {'items': info, 'picture': extra_data['picture'], 'tab':'home'}
-    fill_database(topics1)
+    # fill_database(topics1)
     # fill_database(topics1, topics2, topics3, topics4, topics5)
     
     if Profile.objects.filter(user=request.user).count() == 0:
@@ -355,20 +355,10 @@ def get_youtube(token):
     return youtube
 
 def _update_playlists(request, user_playlists_items):
-    playlists_to_update = []
-    for playlist in user_playlists_items:
-        try:
-            playlist = request.user.playlist_set.get(id=playlist['id'])
-            if not playlist:
-                playlists_to_update.append(playlist)
-        except Exception as e:
-            pass
-    
-    if playlists_to_update:
-        playlists, videos, channels = _get_users_videos(playlists_to_update, youtube)
-        save_channels(channels)
-        save_playlists(playlists, user=request.user)
-        save_videos(videos)
+    playlists, videos, channels = _get_users_videos(user_playlists_items, youtube)
+    save_channels(channels)
+    save_playlists(playlists, user=request.user)
+    save_videos(videos)
 
 def get_user_playlists(youtube):
     """Fetches the user's YouTube playlists."""
@@ -381,7 +371,7 @@ def get_user_playlists(youtube):
         )
         return request.execute()['items']  # Executes the request
     except Exception as e:
-        # print("An error occurred: %s" % e)
+        print("An error occurred: %s" % e)
         return None
 
 def _get_users_videos(playlists_items, youtube):
