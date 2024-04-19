@@ -54,7 +54,7 @@ function onPlayerStateChange(event) {
             // Start an interval to log the current time every 3 seconds
             intervalId = setInterval(function() {
                 if (isWatched() == true){
-                    document.getElementById(idValue).style.backgroundColor = "green";
+                    document.getElementById(idValue).style.backgroundColor = "rgb(67, 152, 67)";
                     if (sentVideoWatched === false) {
                         sendWatchedVideo();
                     } else {

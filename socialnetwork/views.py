@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 CONFIG.read(BASE_DIR / "config.ini")
 
-youtube = build('youtube', 'v3', CONFIG.get("Django", "api_key"))
+youtube = build('youtube', 'v3', developerKey="AIzaSyDtsJ92iKmspU1G1mblmnRjmV1IjLr4LrY")
 topics1 = ['computer science', 'algorithms']
 topics2 = ['compilers', 'java', 'javascript', 'numpy', 'sklearn']
 topics3 = ['Machine Learning', 'Large Lenguage Models', 'Data Structures'] 
@@ -107,7 +107,7 @@ def home(request):
         info.append(el)
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
     context = {'items': info, 'picture': extra_data['picture'], 'tab':'home'}
-    # fill_database(topics1)
+    fill_database(topics1)
     # fill_database(topics1, topics2, topics3, topics4, topics5)
     
     if Profile.objects.filter(user=request.user).count() == 0:
@@ -264,6 +264,22 @@ def follow(request, username):
 def video_watched(request):
     video_id = request.POST.get('videoId')
     course_id = request.POST.get('courseId')
+    
+    user_course = UserCourse.objects.filter(course_id=course_id).order_by('id').first()
+    if not user_course:
+        # If there is at least one user with the course, get the user object
+        response_data = {
+            'status': 404,
+            'message': f'User not found for course: {course_id}',
+        }
+        return JsonResponse(response_data)
+    elif user_course.user.username != request.user.username:
+        response_data = {
+            'status': 401,
+            'message': f'User is not allowed to update that course',
+        }
+        return JsonResponse(response_data)
+
 
     video = get_object_or_404(Video, id=video_id)
     course = get_object_or_404(Course, id=course_id)
@@ -474,6 +490,7 @@ def get_playlists_items(topics: list) -> list:
         element is a playlist
     """
     query = get_query(topics)
+    youtube = build('youtube', 'v3', developerKey="AIzaSyDtsJ92iKmspU1G1mblmnRjmV1IjLr4LrY")
     request = youtube.search().list(
         part="snippet",
         maxResults=6,
@@ -482,7 +499,8 @@ def get_playlists_items(topics: list) -> list:
         type="playlist",
         relevanceLanguage="en"
     )
-    return request.execute()['items']
+    ans = request.execute()['items']
+    return ans
 
 def get_playlist_videos_channels(items: list):
     playlists = []
@@ -547,14 +565,13 @@ def save_channels(channels: list):
             # print(f"Error creating channel {c} ")
             raise Exception(e)
             
-def save_playlists(playlists: list, user: User):
+def save_playlists(playlists: list, user=None):
     for playlist in playlists:
         id = playlist['playlist_id']
         total_mins = playlist['duration']
         title = playlist['title']
         thumbnail = playlist['thumbnail']
         channelId = playlist['channel_id']
-
         channel = Channel.objects.get(id=channelId)
 
         try:
