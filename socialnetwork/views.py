@@ -64,12 +64,12 @@ def user_playlists(request):
     social_account = SocialAccount.objects.get(user=request.user, provider='google')
     token = SocialToken.objects.get(account=social_account)
     access_token = token.token
-    youtube = get_youtube(access_token)
-    user_playlists_items = get_user_playlists(youtube)
+    yt = get_youtube(access_token)
+    user_playlists_items = get_user_playlists(yt)
     if not user_playlists_items: #user doesn't have any playlists
         return render(request, 'socialnetwork/playlists.html', {'picture': extra_data['picture'], 'tab': 'user_playlists'})
     else:
-        _update_playlists(request, user_playlists_items)
+        _update_playlists(request, user_playlists_items, yt)
         home_playlists = request.user.playlist_set.all()
         info = []
         for playlist in home_playlists:
@@ -354,8 +354,8 @@ def get_youtube(token):
     youtube = build('youtube', 'v3', credentials=credentials)
     return youtube
 
-def _update_playlists(request, user_playlists_items):
-    playlists, videos, channels = _get_users_videos(user_playlists_items, youtube)
+def _update_playlists(request, user_playlists_items,yt):
+    playlists, videos, channels = _get_users_videos(user_playlists_items, yt)
     save_channels(channels)
     save_playlists(playlists, user=request.user)
     save_videos(videos)
@@ -374,7 +374,7 @@ def get_user_playlists(youtube):
         print("An error occurred: %s" % e)
         return None
 
-def _get_users_videos(playlists_items, youtube):
+def _get_users_videos(playlists_items, yt):
 
     # print(f"playlist_items: {playlists_items}")
     # print("\n"*3)
@@ -393,8 +393,8 @@ def _get_users_videos(playlists_items, youtube):
             playlist['thumbnail'] = item['snippet']['thumbnails']['medium']['url']
             playlist['channel_id'] = item['snippet']['channelId']
             # print(f"item id: {item['id']}, title: {playlist['title']}")
-            channel_name, channel_thumbnail = get_channel_info(playlist['channel_id'])
-            duration, pl_videos = _get_videos_of_user_playlists_and_duration(playlist['playlist_id'], youtube)
+            channel_name, channel_thumbnail = get_channel_info(playlist['channel_id'], yt)
+            duration, pl_videos = _get_videos_of_user_playlists_and_duration(playlist['playlist_id'], yt)
             duration, pl_videos
             playlist['duration'] = duration
             channel['id'] = playlist['channel_id']
@@ -517,8 +517,8 @@ def get_playlist_videos_channels(items: list):
     
     return playlists, videos, channels
 
-def get_channel_info(channel_id: str):
-    request = youtube.channels().list(
+def get_channel_info(channel_id: str, yt):
+    request = yt.channels().list(
         part="snippet,contentDetails,statistics",
         id=channel_id
     )
