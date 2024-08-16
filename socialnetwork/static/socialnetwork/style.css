@@ -51,7 +51,6 @@
 .playlist-container {
     margin:0px;
     padding:0px;
-    background: #f9f9f9;
     padding-left: 2%;
     padding-right: 2%
 }
@@ -63,7 +62,7 @@
 
 .list-container{
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 400px));
     column-gap: 20px;
     row-gap: 30px;
     margin-top: 15px;
@@ -104,6 +103,7 @@
 
 .channel-thumbnail{
     border-radius: 50%;
+    margin: 5px;
 }
 
 .playlist-title{
@@ -135,12 +135,18 @@
     transition: opacity .2s, visibility .2s;
     border-radius: 5%;
     text-align: center;
+    /* Flexbox centering */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size:2em;
 }
   
-  .img__wrap:hover .img__description {
-    visibility: visible;
-    opacity: 1;
-  }
+.img__wrap:hover .img__description {
+visibility: visible;
+opacity: 1;
+}
 
 .profile-picture{
     border-radius: 50%;
