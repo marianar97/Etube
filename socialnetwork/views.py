@@ -170,7 +170,7 @@ def profile_view(request, username):
 def course_view(request, playlist_id):
     video_id = request.GET.get("v")
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
-    playlist = Playlist.objects.get(id=playlist_id)
+    playlist = get_object_or_404(Playlist, id=playlist_id)
     videos_in_playlist = Video.objects.filter(playlist__id=playlist_id)
     
     # convert the playlist to a course and save it

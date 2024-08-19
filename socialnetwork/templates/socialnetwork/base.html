@@ -14,44 +14,55 @@
 <body>
 
 
-      <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'home' %}">
-              <img src="{% static 'socialnetwork/images/etube_small_logo.png' %}" height="50">
-            </a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'home' %}">
+            <img src="{% static 'socialnetwork/images/etube_small_logo.png' %}" height="50">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item">
-                <a class="nav-link {%if tab == 'home'%} active underline {%endif%}" aria-current="page" href="{% url 'home' %}">Public playlists</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {%if tab == 'user_playlists' %}active underline{%endif%}" href="{% url 'playlists' %}">Your playlists</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {%if tab == 'my_courses' %}active underline{%endif%}" href="{% url 'all-courses' %}">My courses</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {%if tab == 'public_courses' %}active underline{%endif%}" href="{% url 'public-courses' %}">Public courses</a>
-              </li>
+                <li class="nav-item">
+                    <a class="nav-link {%if tab == 'home'%} active underline {%endif%}" aria-current="page" href="{% url 'home' %}">Public playlists</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {%if tab == 'user_playlists' %}active underline{%endif%}" href="{% url 'playlists' %}">Your playlists</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {%if tab == 'my_courses' %}active underline{%endif%}" href="{% url 'all-courses' %}">My courses</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {%if tab == 'public_courses' %}active underline{%endif%}" href="{% url 'public-courses' %}">Public courses</a>
+                </li>
             </ul>
             
-            <ul class="navbar-nav ms-auto mb-2 mb-lg-0"> <!-- This line has been updated -->
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle navbar-brand" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img class="profile-picture" src={{picture}} alt="" width="45" height="45">
-                  </a>
-                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown"> <!-- This line has been updated -->
-                  <a class="dropdown-item" href="{% url 'profile' request.user.username %}">Profile</a>
-                  <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
-                </div>
-              </li>
+            <!-- Profile and Logout for Large Screens -->
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 d-none d-lg-flex">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle navbar-brand" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img class="profile-picture" src="{{ picture }}" alt="" width="45" height="45">
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href="{% url 'profile' request.user.username %}">Profile</a>
+                        <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
+                    </div>
+                </li>
             </ul>
-          </div>
+
+            <!-- Profile and Logout for Smaller Screens -->
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 d-lg-none">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'profile' request.user.username %}">Profile</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                </li>
+            </ul>
         </div>
-      </nav>
+    </div>
+</nav>
 
       {% block body %}
       {% endblock body %}

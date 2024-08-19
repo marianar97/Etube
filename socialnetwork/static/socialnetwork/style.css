@@ -62,11 +62,20 @@
 
 .list-container{
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 400px));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     column-gap: 20px;
     row-gap: 30px;
     margin-top: 15px;
 }
+
+.your-playlist-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, .3fr));
+    column-gap: 20px;
+    row-gap: 30px;
+    margin-top: 15px;
+}
+
 
 .list-course-container{
     display: grid;
