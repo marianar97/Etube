@@ -107,8 +107,13 @@ def home(request):
         info.append(el)
     extra_data = SocialAccount.objects.get(user=request.user).extra_data
     context = {'items': info, 'picture': extra_data['picture'], 'tab':'home'}
-    # fill_database(topics1)
-    # fill_database(topics1, topics2, topics3, topics4, topics5)
+    extra_data = SocialAccount.objects.get(user=request.user).extra_data
+    social_account = SocialAccount.objects.get(user=request.user, provider='google')
+    token = SocialToken.objects.get(account=social_account)
+    access_token = token.token
+    yt = get_youtube(access_token)
+    
+    # fill_database(yt,topics1, topics2, topics3, topics4, topics5)
     
     if Profile.objects.filter(user=request.user).count() == 0:
         new_user_profile = Profile.objects.create(user = request.user, picture = extra_data['picture'])
@@ -492,7 +497,7 @@ def get_playlists_items(topics: list) -> list:
     ans = request.execute()['items']
     return ans
 
-def get_playlist_videos_channels(items: list):
+def get_playlist_videos_channels(items: list, yt):
     playlists = []
     channels = []
     videos = []
@@ -505,8 +510,8 @@ def get_playlist_videos_channels(items: list):
         playlist['thumbnail'] = item['snippet']['thumbnails']['medium']['url']
         channel_id = item['snippet']['channelId']
         playlist['channel_id'] = channel_id
-        channel_name, channel_thumbnail = get_channel_info(channel_id)
-        duration, pl_videos = get_playlists_videos_and_duration(playlist['playlist_id'])
+        channel_name, channel_thumbnail = get_channel_info(channel_id, yt)
+        duration, pl_videos = get_playlists_videos_and_duration(playlist['playlist_id'],yt)
         playlist['duration'] = duration
         channel['id'] = channel_id
         channel['name'] = channel_name
@@ -531,10 +536,10 @@ def get_duration(minutes: str) -> str:
     hours, minutes = divmod(minutes, 60)
     return f"{int(hours)} hours {int(minutes)} minutes" if hours > 0 else f"{minutes} minutes"
 
-def fill_database(*args):
+def fill_database(yt, *args):
     for keywords in args:
         ans = get_playlists_items(keywords)
-        playlists, all_videos, channels = get_playlist_videos_channels(ans)
+        playlists, all_videos, channels = get_playlist_videos_channels(ans, yt)
         save_channels(channels)
         save_playlists(playlists)
         save_videos(all_videos)
@@ -628,13 +633,13 @@ def get_video_mins_duration(duration: str) -> int:
     minutes, seconds = divmod(total_seconds, 60)
     return minutes
 
-def get_playlists_videos_and_duration(playlist_id: str):
+def get_playlists_videos_and_duration(playlist_id: str,yt):
     # print(f"searching for playlist with id {playlist_id}")
     next_page_token = None
     videos = {}
     total_mins = 0
     while True: 
-        pl_request = youtube.playlistItems().list(
+        pl_request = yt.playlistItems().list(
             part='snippet',
             playlistId=playlist_id,
             maxResults=50,
@@ -655,8 +660,7 @@ def get_playlists_videos_and_duration(playlist_id: str):
             videos[id_video] = video 
             ids.append(id_video)
             
-
-        vid_request = youtube.videos().list(
+        vid_request = yt.videos().list(
             part="contentDetails, player",
             id=",".join(ids)
         )
